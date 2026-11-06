@@ -20,13 +20,13 @@ export default function NameScreen() {
   return (
     <Screen>
       <Eyebrow>UYVO</Eyebrow>
-      <Title>Name the Hemo-Hero</Title>
-      <Body>2 to 24 characters. The pale, tired, armored, and glowing body follows today's iron and flow.</Body>
-      {game.snap.mode === 'device' ? <Banner>Saved on this device. It will sync with your profile once Uyvo is connected.</Banner> : null}
+      <Title>What is your name?</Title>
+      <Body>Use 2 to 24 letters.</Body>
+      {game.snap.mode === 'device' ? <Banner>Saved on this phone.</Banner> : null}
       {error || nameError ? <Banner tone="crimson">{error ?? nameError}</Banner> : null}
       <Field label="Name" value={name} onChangeText={setName} autoCapitalize="words" />
       <Button
-        label="Continue"
+        label="Next"
         disabled={busy || validateName(name) !== null}
         onPress={() => {
           setBusy(true);
@@ -38,7 +38,7 @@ export default function NameScreen() {
         }}
       />
       <Button
-        label="Use a different email"
+        label={game.snap.mode === 'device' ? 'Start over' : 'Use a different email'}
         tone="quiet"
         onPress={() => {
           void game.signOut().then(() => router.replace('/sign-in'));

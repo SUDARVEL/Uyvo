@@ -18,8 +18,8 @@ export default function TabsLayout() {
         tabBarActiveTintColor: palette.orange,
         tabBarInactiveTintColor: palette.muted,
       }}>
-      <Tabs.Screen name="forge" options={{ title: 'Forge' }} />
-      <Tabs.Screen name="vein-train" options={{ title: 'Vein Train' }} />
+      <Tabs.Screen name="forge" options={{ title: 'Today' }} />
+      <Tabs.Screen name="vein-train" options={{ title: 'Days' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
     </Tabs>
   );

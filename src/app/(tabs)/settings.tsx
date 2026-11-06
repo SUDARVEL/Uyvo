@@ -3,6 +3,7 @@ import { Alert, Platform, StyleSheet, Switch, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { Banner, Body, Button, Eyebrow, Field, Screen, Title } from '@/components/ui';
+import { RIBBON_LABEL } from '@/domain/copy';
 import { AVATARS, type AvatarId } from '@/domain/engine';
 import { useGame } from '@/state/game';
 import { palette } from '@/theme';
@@ -19,14 +20,12 @@ export default function SettingsScreen() {
     <Screen>
       <Eyebrow>UYVO</Eyebrow>
       <Title>Settings</Title>
-      <Body>{profile?.email ? profile.email : 'On this device'}</Body>
-      {game.snap.mode === 'device' ? (
-        <Banner>This install has no Supabase project yet. Progress stays on this device.</Banner>
-      ) : null}
-      {!game.online && game.snap.mode === 'cloud' ? <Banner>Offline — Sync now runs when you are back online.</Banner> : null}
+      <Body>{profile?.email ? profile.email : 'On this phone'}</Body>
+      {game.snap.mode === 'device' ? <Banner>Saved only on this phone.</Banner> : null}
+      {!game.online && game.snap.mode === 'cloud' ? <Banner>No network. Try again when you are online.</Banner> : null}
       {error ? <Banner tone="crimson">{error}</Banner> : null}
       {game.snap.lastSyncError ? <Banner tone="crimson">{game.snap.lastSyncError}</Banner> : null}
-      <Field label="Display name" value={name} onChangeText={setName} autoCapitalize="words" />
+      <Field label="Your name" value={name} onChangeText={setName} autoCapitalize="words" />
       <Button
         label="Save name"
         disabled={busy}
@@ -38,12 +37,12 @@ export default function SettingsScreen() {
           });
         }}
       />
-      <Text style={styles.label}>Avatar look</Text>
+      <Text style={styles.label}>Ribbon color</Text>
       <View style={styles.row}>
         {AVATARS.map((avatar) => (
           <Button
             key={avatar}
-            label={avatar}
+            label={RIBBON_LABEL[avatar]}
             tone={profile?.avatarId === avatar ? 'leaf' : 'quiet'}
             onPress={() => {
               void game.saveAvatar(avatar as AvatarId).then(setError);
@@ -56,8 +55,8 @@ export default function SettingsScreen() {
           <Text style={styles.label}>Reminders</Text>
           <Text style={styles.hint}>
             {Platform.OS === 'web'
-              ? 'Local reminders are an Android and iOS feature.'
-              : '7:30, 11:00, and 13:30.'}
+              ? 'Reminders work on the phone app, not in this browser.'
+              : 'Morning 7:30, juice 11:00, lunch 1:30.'}
           </Text>
         </View>
         <Switch
@@ -72,19 +71,19 @@ export default function SettingsScreen() {
       </View>
       <Text style={styles.hint}>
         {game.syncing
-          ? 'Syncing…'
+          ? 'Sending…'
           : game.snap.lastSyncAt
-            ? `Last sync ${new Date(game.snap.lastSyncAt).toLocaleString()}`
-            : 'Not synced yet'}
+            ? `Last sent ${new Date(game.snap.lastSyncAt).toLocaleString()}`
+            : 'Not sent yet'}
       </Text>
       {game.snap.mode === 'cloud' ? (
-        <Button label="Sync now" tone="leaf" disabled={game.syncing} onPress={() => void game.syncNow()} />
+        <Button label="Send now" tone="leaf" disabled={game.syncing} onPress={() => void game.syncNow()} />
       ) : null}
       <Button
         label="Sign out"
         tone="crimson"
         onPress={() => {
-          Alert.alert('Sign out of Uyvo?', 'This device forgets the forge until you sign in again.', [
+          Alert.alert('Leave Uyvo?', 'This phone forgets your days until you sign in again.', [
             { text: 'Stay', style: 'cancel' },
             {
               text: 'Sign out',

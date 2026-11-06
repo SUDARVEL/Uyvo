@@ -78,50 +78,50 @@ type QuestDef = {
 
 export const QUESTS: Record<QuestKey, QuestDef> = {
   morning_shot: {
-    label: 'Morning shot',
-    detail: 'Soaked dry fruit · +10 shards',
+    label: 'Morning drink',
+    detail: 'Soaked dry fruit. +10 iron',
     baseIron: 10,
     baseFlow: 0,
     vitamin: true,
   },
   midmorning_juice: {
-    label: 'Mid-morning juice',
-    detail: 'Red velvet · +15 shards · +5 flow',
+    label: 'Red juice',
+    detail: 'Red drink. +15 iron and +5 flow',
     baseIron: 15,
     baseFlow: 5,
     vitamin: true,
   },
   lunch_greens: {
-    label: 'Lunch greens',
-    detail: 'Keerai, spinach, or beetroot · +15 shards',
+    label: 'Green lunch',
+    detail: 'Keerai, spinach, or beetroot. +15 iron',
     baseIron: 15,
     baseFlow: 0,
     vitamin: true,
   },
   water: {
     label: 'Water',
-    detail: '+5 flow each 500 ml',
+    detail: 'One glass. +5 flow',
     baseIron: 0,
     baseFlow: 5,
     vitamin: false,
   },
   banana: {
     label: 'Banana',
-    detail: '+5 flow · once today',
+    detail: '+5 flow, once today',
     baseIron: 0,
     baseFlow: 5,
     vitamin: false,
   },
   walk: {
-    label: 'Walk',
-    detail: '+10 flow · once today',
+    label: 'A short walk',
+    detail: '+10 flow, once today',
     baseIron: 0,
     baseFlow: 10,
     vitamin: false,
   },
   digest_survive: {
-    label: 'Digest survived',
-    detail: '+5 shards',
+    label: 'You waited',
+    detail: '+5 iron',
     baseIron: 5,
     baseFlow: 0,
     vitamin: false,
@@ -143,16 +143,16 @@ export const BADGE_ORDER: BadgeKey[] = [
 ];
 
 export const BADGE_LABEL: Record<BadgeKey, string> = {
-  capillary_creator: 'Capillary Creator',
-  oxygen_optimizer: 'Oxygen Optimizer',
-  hemoglobin_master: 'Hemoglobin Master',
+  capillary_creator: 'Start',
+  oxygen_optimizer: 'Stronger',
+  hemoglobin_master: 'Full week',
 };
 
 export const HERO_LABEL: Record<HeroState, string> = {
-  pale: 'Pale',
+  pale: 'Low',
   tired: 'Tired',
-  armored: 'Armored',
-  glowing: 'Glowing',
+  armored: 'Strong',
+  glowing: 'Full of energy',
 };
 
 export const FOOD_LABEL: Record<FoodKey, string> = {
@@ -185,7 +185,7 @@ export function addDays(isoDate: string, days: number): string {
 
 export function validateName(raw: string): string | null {
   const name = raw.trim();
-  if (name.length < 2 || name.length > 24) return 'Use 2 to 24 characters.';
+  if (name.length < 2 || name.length > 24) return 'Use 2 to 24 letters.';
   return null;
 }
 
@@ -241,24 +241,24 @@ export function canLog(input: {
   today: string;
 }): string | null {
   const todayLogs = logsOn(input.logs, input.today);
-  if (input.questKey === 'digest_survive') return 'The digest bonus is awarded by the clock.';
+  if (input.questKey === 'digest_survive') return 'The wait bonus comes from the clock.';
   if (input.questKey === 'water') {
     const glasses = todayLogs.filter((log) => log.questKey === 'water').length;
-    if (glasses >= 12) return "Twelve glasses is the day's cap.";
+    if (glasses >= 12) return '12 glasses is enough for today.';
   } else if (todayLogs.some((log) => log.questKey === input.questKey)) {
-    return 'Already logged today.';
+    return 'You already did this today.';
   }
   if (isIronQuest(input.questKey) && teaBlocksIron(input.teas, input.now)) {
-    return 'The Tea Monster has this window. Iron stays locked until the clock ends.';
+    return 'No blood food while you wait. Water is still ok.';
   }
   return null;
 }
 
 export function canStartDigest(logs: QuestLog[], teas: TeaWindow[], today: string): string | null {
   if (!logsOn(logs, today).some((log) => log.questKey === 'lunch_greens')) {
-    return 'Eat lunch greens before you wake the monster.';
+    return 'Eat greens first. Then start the wait.';
   }
-  if (teas.some((tea) => tea.localDate === today)) return 'The digest already started today.';
+  if (teas.some((tea) => tea.localDate === today)) return 'The wait already started today.';
   return null;
 }
 
@@ -348,7 +348,7 @@ export function evaluateProgress(input: {
 }
 
 export function celebration(newBadges: Badge[], fruitGrew: boolean): string | null {
-  if (fruitGrew) return 'Hemoglobin Master. A pomegranate grew, and the next week starts at zero.';
+  if (fruitGrew) return 'Full week. A red fruit grew. The count starts again at zero.';
   if (newBadges.length === 0) return null;
   const names = newBadges.map((badge) => BADGE_LABEL[badge.badgeKey]).join(' and ');
   return `${names} earned.`;

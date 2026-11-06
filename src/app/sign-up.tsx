@@ -28,14 +28,14 @@ export default function SignUp() {
   return (
     <Screen>
       <Eyebrow>UYVO</Eyebrow>
-      <Title>Create the hero</Title>
-      <Body>Email and a password of at least 8 characters. The name comes next.</Body>
-      {offline ? <Banner>Sign in needs a connection. The forge unlocks after the first session.</Banner> : null}
+      <Title>Make an account</Title>
+      <Body>Email and a password of at least 8 letters. Your name comes next.</Body>
+      {offline ? <Banner>You need a network to make an account.</Banner> : null}
       {error ? <Banner tone="crimson">{error}</Banner> : null}
-      {mismatch ? <Banner tone="crimson">Passwords differ.</Banner> : null}
+      {mismatch ? <Banner tone="crimson">The two passwords are not the same.</Banner> : null}
       <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
       <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />
-      <Field label="Confirm password" value={confirm} onChangeText={setConfirm} secureTextEntry />
+      <Field label="Type the password again" value={confirm} onChangeText={setConfirm} secureTextEntry />
       <Button
         label="Create account"
         disabled={busy || !ready}
@@ -45,7 +45,7 @@ export default function SignUp() {
           void game.signUp(email, password).then((result) => {
             setBusy(false);
             if (result.confirmEmail) {
-              setError('Open the mail to confirm this address, then sign in.');
+              setError('Look in your email, then sign in.');
               return;
             }
             if (result.error) setError(result.error);

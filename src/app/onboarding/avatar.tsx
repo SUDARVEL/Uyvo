@@ -4,15 +4,10 @@ import { Redirect, useRouter } from 'expo-router';
 
 import { HeroFigure } from '@/components/hero';
 import { Banner, Body, Button, Screen, Title } from '@/components/ui';
+import { RIBBON_LABEL } from '@/domain/copy';
 import { AVATARS, type AvatarId } from '@/domain/engine';
 import { useGame } from '@/state/game';
 import { palette, sashColor } from '@/theme';
-
-const copy: Record<AvatarId, string> = {
-  ember: 'Ember',
-  vein: 'Vein',
-  leaf: 'Leaf',
-};
 
 export default function AvatarScreen() {
   const game = useGame();
@@ -28,8 +23,8 @@ export default function AvatarScreen() {
 
   return (
     <Screen>
-      <Title>Choose a look</Title>
-      <Body>The color is a sash. Today's forge still decides whether the hero is pale or glowing.</Body>
+      <Title>Pick a color</Title>
+      <Body>The color is a ribbon. Food changes the picture.</Body>
       {error ? <Banner tone="crimson">{error}</Banner> : null}
       <View style={styles.row}>
         {AVATARS.map((choice) => {
@@ -40,14 +35,14 @@ export default function AvatarScreen() {
               accessibilityRole="button"
               onPress={() => setAvatar(choice)}
               style={[styles.choice, { borderColor: selected ? sashColor[choice] : palette.line }]}>
-              <Text style={{ color: sashColor[choice], fontWeight: '800' }}>{copy[choice]}</Text>
+              <Text style={{ color: sashColor[choice], fontWeight: '800' }}>{RIBBON_LABEL[choice]}</Text>
             </Pressable>
           );
         })}
       </View>
       {avatar ? <HeroFigure state="pale" avatar={avatar} name={name} /> : null}
       <Button
-        label="Enter the forge"
+        label="Start today"
         disabled={!avatar || busy}
         onPress={() => {
           if (!avatar) return;

@@ -90,7 +90,7 @@ assert.equal(heroState(1), 'glowing');
 const twelve = Array.from({ length: 12 }, (_, index) =>
   log({ questKey: 'water', localDate: '2026-11-06', id: `glass-${index}` }),
 );
-assert.equal(canLog({ questKey: 'water', logs: twelve, teas: [], now: new Date(), today: '2026-11-06' }), "Twelve glasses is the day's cap.");
+assert.equal(canLog({ questKey: 'water', logs: twelve, teas: [], now: new Date(), today: '2026-11-06' }), '12 glasses is enough for today.');
 assert.equal(canLog({ questKey: 'water', logs: twelve.slice(0, 11), teas: [], now: new Date(), today: '2026-11-06' }), null);
 
 const active = tea('active', '2026-11-06T08:00:00.000Z', '2026-11-06T09:00:00.000Z', '2026-11-06');
@@ -98,7 +98,7 @@ const during = new Date('2026-11-06T08:30:00.000Z');
 assert.equal(teaBlocksIron([active], during), true);
 assert.match(
   canLog({ questKey: 'morning_shot', logs: [], teas: [active], now: during, today: '2026-11-06' }) ?? '',
-  /Tea Monster/,
+  /while you wait/,
 );
 assert.equal(canLog({ questKey: 'water', logs: [], teas: [active], now: during, today: '2026-11-06' }), null);
 assert.equal(canLog({ questKey: 'morning_shot', logs: [], teas: [active], now: new Date('2026-11-06T09:00:00.000Z'), today: '2026-11-06' }), null);
@@ -111,7 +111,7 @@ assert.equal(teaBlocksIron([survived], during), false);
 const overnight = tea('active', '2026-11-06T23:40:00.000Z', '2026-11-07T00:40:00.000Z', '2026-11-06');
 assert.equal(teaBlocksIron([overnight], new Date('2026-11-07T00:10:00.000Z')), true);
 
-assert.match(canStartDigest([], [], '2026-11-06') ?? '', /lunch/i);
+assert.match(canStartDigest([], [], '2026-11-06') ?? '', /greens/i);
 assert.equal(
   canStartDigest([log({ questKey: 'lunch_greens', localDate: '2026-11-06', foodKey: 'beetroot' })], [], '2026-11-06'),
   null,
@@ -141,7 +141,7 @@ assert.equal(streak.currentStreak, 0);
 assert.equal(streak.longestStreak, 7);
 assert.equal(tree.fruitCount, 1);
 assert.equal(tree.weeksCompleted, 1);
-assert.match(celebration([{ badgeKey: 'hemoglobin_master', earnedOn: '2026-11-07' }], true) ?? '', /pomegranate/);
+assert.match(celebration([{ badgeKey: 'hemoglobin_master', earnedOn: '2026-11-07' }], true) ?? '', /red fruit/);
 
 const missed = evaluateProgress({
   logs: [],

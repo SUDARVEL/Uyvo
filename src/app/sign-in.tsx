@@ -23,13 +23,10 @@ export default function SignIn() {
     return (
       <Screen>
         <Eyebrow>UYVO</Eyebrow>
-        <Title>The forge waits</Title>
-        <Body>
-          No Supabase project is connected yet. Practice keeps the Hemo-Hero, Iron Shards, and Flow Points on this device
-          and does not sync.
-        </Body>
+        <Title>Build your blood</Title>
+        <Body>Your days stay on this phone. Nothing is sent anywhere yet.</Body>
         <Button
-          label="Practice on this device"
+          label="Start"
           onPress={() => {
             setBusy(true);
             void game.practice().then((destination) => router.replace(destination));
@@ -45,8 +42,8 @@ export default function SignIn() {
     <Screen>
       <Eyebrow>UYVO</Eyebrow>
       <Title>Sign in</Title>
-      <Body>Your Hemo-Hero keeps today's forge on this phone, then syncs when you are online.</Body>
-      {offline ? <Banner>Sign in needs a connection. The forge unlocks after the first session.</Banner> : null}
+      <Body>Your days stay on this phone, then go to your account when you are online.</Body>
+      {offline ? <Banner>You need a network to sign in the first time.</Banner> : null}
       {error ? <Banner tone="crimson">{error}</Banner> : null}
       <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
       <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />

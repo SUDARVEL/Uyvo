@@ -765,7 +765,7 @@ async function survive(db: SQLiteDatabase, tea: TeaWindow, mode: string | null):
     await bumpWallet(db, tea.userId, entry.ironShardsAwarded, entry.flowPointsAwarded);
     await enqueue(db, mode, tea.userId, 'quest_log', entry.clientId, 'insert', logPayload(entry));
   }
-  return (await applyProgress(db, tea.userId, mode, tea.localDate)) ?? 'The monster left. +5 Iron Shards.';
+  return (await applyProgress(db, tea.userId, mode, tea.localDate)) ?? 'You waited. +5 iron.';
 }
 
 export function startDigest(db: SQLiteDatabase): Promise<ActionResult> {
@@ -811,7 +811,7 @@ export function startDigest(db: SQLiteDatabase): Promise<ActionResult> {
       status: 'active',
       drank_at: null,
     });
-    return { error: null, message: '60 minutes. Iron is locked. Flow still counts.' };
+    return { error: null, message: 'Wait 60 minutes. No blood food. Water is still ok.' };
   });
 }
 
@@ -839,7 +839,7 @@ export function drinkTea(db: SQLiteDatabase): Promise<ActionResult> {
       status: 'drank',
       drank_at: drankAt,
     });
-    return { error: null, message: 'Tea won this window. Iron stays locked until the clock ends.' };
+    return { error: null, message: 'You drank tea. No blood food until the clock ends.' };
   });
 }
 

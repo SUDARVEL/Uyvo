@@ -14,11 +14,11 @@ export default function VeinTrainScreen() {
   return (
     <Screen>
       <Eyebrow>UYVO</Eyebrow>
-      <Title>Vein Train</Title>
-      {empty ? <Body>Your vein train has not left the station. Survive a digest after the three meals.</Body> : null}
+      <Title>Days in a row</Title>
+      {empty ? <Body>No full day yet. Eat the three foods. Then wait 60 minutes with no tea.</Body> : null}
       <View style={styles.streakBlock}>
         <Text style={styles.number}>{snap.streak.currentStreak}</Text>
-        <Text style={styles.streakLabel}>day streak</Text>
+        <Text style={styles.streakLabel}>days in a row</Text>
         <Text style={styles.meta}>
           Best {snap.streak.longestStreak}
           {snap.streak.lastSuccessDate ? ` · last success ${snap.streak.lastSuccessDate}` : ''}
@@ -37,7 +37,7 @@ export default function VeinTrainScreen() {
         })}
       </View>
       <HealthTree fruitCount={snap.tree.fruitCount} />
-      <Body>Each finished week grows one red pomegranate. Week {snap.tree.weeksCompleted + 1} is on the rails.</Body>
+      <Body>Each full week grows one red fruit. This is week {snap.tree.weeksCompleted + 1}.</Body>
     </Screen>
   );
 }
@@ -45,7 +45,7 @@ export default function VeinTrainScreen() {
 const styles = StyleSheet.create({
   streakBlock: { alignItems: 'center', gap: 2, paddingVertical: 8 },
   number: { color: palette.cream, fontSize: 84, fontWeight: '800', lineHeight: 88 },
-  streakLabel: { color: palette.orange, fontSize: 14, letterSpacing: 2, fontWeight: '800', textTransform: 'uppercase' },
+  streakLabel: { color: palette.orange, fontSize: 16, fontWeight: '800' },
   medals: { flexDirection: 'row', gap: 8 },
   medal: {
     flex: 1,

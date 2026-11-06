@@ -58,7 +58,7 @@ export async function boot(db: SQLiteDatabase): Promise<Snap> {
 
 export async function signIn(db: SQLiteDatabase, email: string, password: string): Promise<string | null> {
   const supabase = getSupabase();
-  if (!supabase) return 'Uyvo has no Supabase project connected.';
+  if (!supabase) return 'This phone is not connected yet.';
   const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
   if (error || !data.user) return error?.message ?? 'Could not sign in.';
   await adoptCloudUser(db, data.user.id, data.user.email ?? email.trim());
@@ -71,7 +71,7 @@ export async function signUp(
   password: string,
 ): Promise<{ error?: string; confirmEmail?: boolean }> {
   const supabase = getSupabase();
-  if (!supabase) return { error: 'Uyvo has no Supabase project connected.' };
+  if (!supabase) return { error: 'This phone is not connected yet.' };
   const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
   if (error) return { error: error.message };
   if (!data.session || !data.user) return { confirmEmail: true };

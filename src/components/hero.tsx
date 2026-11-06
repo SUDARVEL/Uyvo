@@ -1,29 +1,17 @@
-import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Rect } from 'react-native-svg';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
+import { heroArt } from '@/art';
 import { HERO_LABEL, type AvatarId, type HeroState } from '@/domain/engine';
+import { RIBBON_LABEL } from '@/domain/copy';
 import { palette, sashColor } from '@/theme';
 
 export function HeroFigure({ state, avatar, name }: { state: HeroState; avatar: AvatarId; name: string }) {
-  const armored = state === 'armored' || state === 'glowing';
-  const tired = state === 'tired';
-  const face = state === 'pale' ? '#D7B8B8' : '#F0C7B4';
-  const body = armored ? '#7A1020' : state === 'pale' ? '#8C7078' : '#6E4450';
-  const shift = tired ? 10 : 0;
   return (
     <View style={styles.wrap} accessibilityLabel={`${name}, ${HERO_LABEL[state]}`}>
-      <Svg width={180} height={210} viewBox="0 0 180 210">
-        {state === 'glowing' ? <Circle cx="90" cy="108" r="78" fill={palette.orange} opacity={0.28} /> : null}
-        <Circle cx="90" cy={72 + shift} r="36" fill={face} />
-        <Circle cx="76" cy={68 + shift} r={tired ? 3 : 5} fill={palette.ink} />
-        <Circle cx="104" cy={68 + shift} r={tired ? 3 : 5} fill={palette.ink} />
-        <Rect x="58" y={118 + shift} width="64" height="70" rx="22" fill={body} />
-        <Rect x="72" y={128 + shift} width="36" height="10" rx="5" fill={sashColor[avatar]} />
-        {armored ? (
-          <Rect x="48" y={112 + shift} width="84" height="30" rx="10" fill={palette.crimson} stroke={palette.orange} strokeWidth="3" />
-        ) : null}
-        {state === 'glowing' ? <Circle cx="90" cy="156" r="6" fill={palette.leaf} /> : null}
-      </Svg>
+      <Image source={heroArt[state]} style={styles.photo} />
+      <View style={[styles.ribbon, { backgroundColor: sashColor[avatar] }]}>
+        <Text style={styles.ribbonText}>{RIBBON_LABEL[avatar]}</Text>
+      </View>
       <Text style={styles.name}>{name}</Text>
       <Text style={styles.state}>{HERO_LABEL[state]}</Text>
     </View>
@@ -31,7 +19,10 @@ export function HeroFigure({ state, avatar, name }: { state: HeroState; avatar: 
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center' },
+  wrap: { alignItems: 'center', gap: 6 },
+  photo: { width: 220, height: 220, borderRadius: 28, backgroundColor: palette.bg },
+  ribbon: { marginTop: -16, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4 },
+  ribbonText: { color: palette.ink, fontWeight: '800' },
   name: { color: palette.cream, fontSize: 22, fontWeight: '800' },
-  state: { color: palette.orange, fontSize: 13, letterSpacing: 1.4, fontWeight: '700' },
+  state: { color: palette.orange, fontSize: 16, fontWeight: '700' },
 });

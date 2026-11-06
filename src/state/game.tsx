@@ -207,7 +207,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       saveAvatar: async (avatarId) => apply(await saveAvatar(db, avatarId)),
       setReminders: async (enabled) => {
         if (Platform.OS === 'web') {
-          if (enabled) return 'Local reminders are an Android and iOS feature.';
+          if (enabled) return 'Reminders work on the phone app, not in this browser.';
           return apply(await saveReminders(db, false));
         }
         if (enabled) {
@@ -224,7 +224,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       drinkTea: async () => apply(await drinkTea(db)),
       syncNow: async () => {
         if (!online) {
-          setNotice("Offline — today's forge is saved on this device.");
+          setNotice('No network. Today is saved on this phone.');
           return;
         }
         await runSync();

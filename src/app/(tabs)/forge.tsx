@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
 
+import { foodArt } from '@/art';
 import { CountdownRing } from '@/components/countdown-ring';
 import { HeroFigure } from '@/components/hero';
 import { Banner, Body, Button, Eyebrow, Screen, Sheet, Title, cardStyle } from '@/components/ui';
@@ -12,7 +13,6 @@ import {
   QUESTS,
   VITAMIN_FOODS,
   canLog,
-  canStartDigest,
   heroState,
   localDate,
   logsOn,
@@ -41,6 +41,7 @@ function QuestRow({
   title,
   detail,
   reward,
+  art,
   done,
   disabled,
   onPress,
@@ -48,12 +49,14 @@ function QuestRow({
   title: string;
   detail: string;
   reward: string;
+  art: ImageSourcePropType;
   done: boolean;
   disabled?: boolean;
   onPress: () => void;
 }) {
   return (
     <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={styles.row}>
+      <Image source={art} style={styles.icon} />
       <View style={styles.rowCopy}>
         <Text style={styles.quest}>{title}</Text>
         <Text style={styles.detail}>{detail}</Text>
@@ -72,6 +75,7 @@ export default function ForgeScreen() {
   const game = useGame();
   const [now, setNow] = useState(() => Date.now());
   const [pending, setPending] = useState<Pending | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
   const [confirmTea, setConfirmTea] = useState(false);
   const [busy, setBusy] = useState(false);
   const today = localDate(new Date(now));
@@ -81,7 +85,6 @@ export default function ForgeScreen() {
   const profile = game.snap.profile;
   const done = new Set(todayLogs.map((log) => log.questKey));
   const glasses = waterCount(game.snap.logs, today);
-  const cold = CORE_QUESTS.every((quest) => !done.has(quest));
   const todayIron = todayLogs.reduce((sum, log) => sum + log.ironShardsAwarded, 0);
   const todayFlow = todayLogs.reduce((sum, log) => sum + log.flowPointsAwarded, 0);
   const teaSeconds = tea?.status === 'active' ? Math.min(3600, secondsLeft(tea.endsAt, now)) : 0;
@@ -104,44 +107,80 @@ export default function ForgeScreen() {
       now: new Date(now),
       today,
     });
-    if (refusal) return;
+    if (refusal) {
+      setHint(refusal);
+      return;
+    }
+    setHint(null);
     setPending({ quest, step: quest === 'lunch_greens' ? 'food' : 'vitamin', food: null });
   };
 
   return (
     <Screen>
       <Eyebrow>UYVO</Eyebrow>
-      <Title>Daily Blood Forge</Title>
-      {game.snap.mode === 'device' ? (
-        <Banner>On this device only. Uyvo is not connected, so nothing syncs.</Banner>
-      ) : null}
-      {game.snap.mode === 'cloud' && !game.online ? (
-        <Banner>Offline — today's forge is saved on this device.</Banner>
-      ) : null}
+      <Title>Today</Title>
+      {game.snap.mode === 'device' ? <Banner>Saved on this phone.</Banner> : null}
+      {game.snap.mode === 'cloud' && !game.online ? <Banner>No network. Today is saved on this phone.</Banner> : null}
       {game.notice ? <Banner tone="leaf">{game.notice}</Banner> : null}
-      {cold ? <Body>The forge is cold. The morning shot lights it.</Body> : null}
+      {hint ? <Banner tone="crimson">{hint}</Banner> : null}
       <HeroFigure state={heroState(ratio)} avatar={profile?.avatarId ?? 'ember'} name={profile?.displayName ?? 'Hero'} />
       <View style={styles.track}>
         <View style={[styles.trackFill, { width: `${Math.round(ratio * 100)}%` }]} />
       </View>
-      <Text style={styles.detail}>{Math.round(ratio * 100)}% of today's forge · three meals, then survive the digest</Text>
+      <Text style={styles.detail}>{Math.round(ratio * 100)}% full. Iron is blood food. Flow is water, banana, and walking.</Text>
       <View style={[cardStyle(), styles.vesselRow]}>
         <Vessel ratio={ratio} />
         <View style={styles.totals}>
           <Text style={styles.totalLabel}>Today</Text>
-          <Text style={styles.totalValue}>{todayIron} Iron Shards</Text>
-          <Text style={styles.totalValue}>{todayFlow} Flow Points</Text>
-          <Text style={styles.totalLabel}>Lifetime</Text>
+          <Text style={styles.totalValue}>{todayIron} iron</Text>
+          <Text style={styles.totalValue}>{todayFlow} flow</Text>
+          <Text style={styles.totalLabel}>All days</Text>
           <Text style={styles.lifetime}>
-            {game.snap.wallet.ironShards} shards · {game.snap.wallet.flowPoints} flow
+            {game.snap.wallet.ironShards} iron · {game.snap.wallet.flowPoints} flow
           </Text>
         </View>
       </View>
+      <View style={[cardStyle(), styles.next]}>
+        <Text style={styles.monster}>Do this next</Text>
+        {!done.has('morning_shot') ? (
+          <Pressable accessibilityRole="button" disabled={busy} onPress={() => openIron('morning_shot')} style={styles.nextRow}>
+            <Image source={foodArt.morning_shot} style={styles.nextArt} />
+            <Text style={styles.quest}>Drink the soaked dry fruit</Text>
+          </Pressable>
+        ) : !done.has('midmorning_juice') ? (
+          <Pressable accessibilityRole="button" disabled={busy} onPress={() => openIron('midmorning_juice')} style={styles.nextRow}>
+            <Image source={foodArt.midmorning_juice} style={styles.nextArt} />
+            <Text style={styles.quest}>Drink the red juice</Text>
+          </Pressable>
+        ) : !done.has('lunch_greens') ? (
+          <Pressable accessibilityRole="button" disabled={busy} onPress={() => openIron('lunch_greens')} style={styles.nextRow}>
+            <Image source={foodArt.lunch_greens} style={styles.nextArt} />
+            <Text style={styles.quest}>Eat green leaves</Text>
+          </Pressable>
+        ) : !tea ? (
+          <Pressable accessibilityRole="button" disabled={busy} onPress={() => setConfirmTea(true)} style={styles.nextRow}>
+            <Image source={foodArt.tea} style={styles.nextArt} />
+            <Text style={styles.quest}>Start the 60 minute wait. No tea.</Text>
+          </Pressable>
+        ) : tea.status === 'active' ? (
+          <>
+            <CountdownRing secondsLeft={teaSeconds} label={clockLabel(teaSeconds)} />
+            <Body>Do not drink tea. Water, banana, and walking are still ok.</Body>
+            <Button label="I drank tea" tone="crimson" disabled={busy} onPress={() => run(() => game.drinkTea())} />
+          </>
+        ) : tea.status === 'survived' ? (
+          <Body>You waited. Good. +5 iron.</Body>
+        ) : (
+          <Body>You drank tea. No blood food until the clock ends.</Body>
+        )}
+      </View>
+      <Text style={styles.totalLabel}>The rest of today</Text>
       {CORE_QUESTS.map((quest) => (
         <QuestRow
           key={quest}
           title={QUESTS[quest].label}
           detail={QUESTS[quest].detail}
+          art={foodArt[quest]}
           reward={quest === 'morning_shot' ? '+10' : '+15'}
           done={done.has(quest)}
           disabled={busy || done.has(quest)}
@@ -150,7 +189,8 @@ export default function ForgeScreen() {
       ))}
       <QuestRow
         title="Water"
-        detail={`${glasses}/12 glasses · 500 ml`}
+        detail={`${glasses} of 12 glasses`}
+        art={foodArt.water}
         reward="+5"
         done={glasses >= 12}
         disabled={busy}
@@ -159,6 +199,7 @@ export default function ForgeScreen() {
       <QuestRow
         title={QUESTS.banana.label}
         detail={QUESTS.banana.detail}
+        art={foodArt.banana}
         reward="+5"
         done={done.has('banana')}
         disabled={busy || done.has('banana')}
@@ -167,30 +208,14 @@ export default function ForgeScreen() {
       <QuestRow
         title={QUESTS.walk.label}
         detail={QUESTS.walk.detail}
+        art={foodArt.walk}
         reward="+10"
         done={done.has('walk')}
         disabled={busy || done.has('walk')}
         onPress={() => run(() => game.logQuest({ questKey: 'walk' }))}
       />
-      <View style={[cardStyle(), styles.tea]}>
-        <Text style={styles.monster}>Next monster</Text>
-        <Text style={styles.quest}>Tea / Coffee</Text>
-        {!done.has('lunch_greens') ? <Body>Eat greens, then wake the monster.</Body> : null}
-        {done.has('lunch_greens') && !tea ? (
-          <Button label="Start Digesting" disabled={busy || canStartDigest(game.snap.logs, game.snap.teas, today) !== null} onPress={() => setConfirmTea(true)} />
-        ) : null}
-        {tea?.status === 'active' ? (
-          <>
-            <CountdownRing secondsLeft={teaSeconds} label={clockLabel(teaSeconds)} />
-            <Body>Iron meals are locked. Water, bananas, and walking still count.</Body>
-            <Button label="I drank tea" tone="crimson" disabled={busy} onPress={() => run(() => game.drinkTea())} />
-          </>
-        ) : null}
-        {tea?.status === 'survived' ? <Body>The monster left. +5 Iron Shards.</Body> : null}
-        {tea?.status === 'drank' ? <Body>Tea won this window. Iron stays locked until the clock ends.</Body> : null}
-      </View>
 
-      <Sheet visible={pending !== null} title={pending?.step === 'food' ? 'Which green?' : 'Double this iron?'} onClose={() => setPending(null)}>
+      <Sheet visible={pending !== null} title={pending?.step === 'food' ? 'What did you eat?' : 'Add lemon or guava?'} onClose={() => setPending(null)}>
         {pending?.step === 'food' ? (
           FOODS.map((food) => (
             <Button
@@ -202,7 +227,7 @@ export default function ForgeScreen() {
           ))
         ) : (
           <>
-            <Body>Lemon or guava doubles this meal's Iron Shards.</Body>
+            <Body>Lemon or guava makes the iron count double.</Body>
             {VITAMIN_FOODS.map((vitamin) => (
               <Button
                 key={vitamin}
@@ -222,7 +247,7 @@ export default function ForgeScreen() {
               />
             ))}
             <Button
-              label="No thanks"
+              label="Skip"
               tone="quiet"
               disabled={busy}
               onPress={() => {
@@ -234,17 +259,17 @@ export default function ForgeScreen() {
           </>
         )}
       </Sheet>
-      <Sheet visible={confirmTea} title="Wake the Tea Monster?" onClose={() => setConfirmTea(false)}>
-        <Body>The lock lasts 60 minutes. Iron meals stop. Flow still counts. If you drink tea, say so — the streak bonus is lost.</Body>
+      <Sheet visible={confirmTea} title="Wait 60 minutes?" onClose={() => setConfirmTea(false)}>
+        <Body>No tea or coffee for 60 minutes. Blood food stops. Water is still ok. If you drink tea, tap the red button.</Body>
         <Button
-          label="Wake the monster"
+          label="Yes, start"
           disabled={busy}
           onPress={() => {
             setConfirmTea(false);
             run(() => game.startDigest());
           }}
         />
-        <Button label="Not yet" tone="quiet" onPress={() => setConfirmTea(false)} />
+        <Button label="Not now" tone="quiet" onPress={() => setConfirmTea(false)} />
       </Sheet>
     </Screen>
   );
@@ -268,6 +293,10 @@ const styles = StyleSheet.create({
     borderColor: palette.line,
     padding: 14,
   },
+  icon: { width: 48, height: 48, borderRadius: 12, backgroundColor: palette.bg },
+  next: { borderColor: palette.orange },
+  nextRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  nextArt: { width: 72, height: 72, borderRadius: 16, backgroundColor: palette.bg },
   rowCopy: { flex: 1, gap: 2 },
   quest: { color: palette.cream, fontSize: 17, fontWeight: '800' },
   detail: { color: palette.muted },

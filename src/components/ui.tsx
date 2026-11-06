@@ -30,7 +30,7 @@ export function Boot() {
   return (
     <View style={styles.boot}>
       <Text style={styles.brand}>Uyvo</Text>
-      <Text style={styles.muted}>Lighting the forge…</Text>
+      <Text style={styles.muted}>One moment…</Text>
     </View>
   );
 }

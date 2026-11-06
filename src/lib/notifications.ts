@@ -18,7 +18,7 @@ async function prepare() {
   });
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('forge', {
-      name: 'Daily forge',
+      name: 'Daily reminders',
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
