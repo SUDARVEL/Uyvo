@@ -1,9 +1,8 @@
 import type { AvatarId } from '@/domain/engine';
 
-export const RIBBON_LABEL: Record<AvatarId, string> = {
-  ember: 'Orange',
-  vein: 'Red',
-  leaf: 'Green',
+export const PERSON_LABEL: Record<AvatarId, string> = {
+  woman: 'Woman',
+  man: 'Man',
 };
 
 export const REMINDERS = [

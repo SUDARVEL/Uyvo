@@ -9,7 +9,7 @@ grant usage on schema private to supabase_auth_admin;
 create table public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   display_name text not null default 'Hero',
-  avatar_id text not null default 'ember',
+  avatar_id text not null default 'woman',
   onboarded_at timestamptz,
   reminders_enabled boolean not null default false,
   created_at timestamptz not null default now(),
@@ -18,7 +18,7 @@ create table public.profiles (
     char_length(btrim(display_name)) between 2 and 24
     and display_name = btrim(display_name)
   ),
-  constraint profiles_avatar_id check (avatar_id in ('ember', 'vein', 'leaf'))
+  constraint profiles_avatar_id check (avatar_id in ('woman', 'man'))
 );
 
 create table public.wallets (

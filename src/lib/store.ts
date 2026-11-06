@@ -51,6 +51,7 @@ export type Snap = {
   wallet: { ironShards: number; flowPoints: number };
   lastSyncAt: string | null;
   lastSyncError: string | null;
+  coachSeen: boolean;
 };
 
 export type ActionResult = { error: string | null; message: string | null };
@@ -175,7 +176,8 @@ async function setMeta(db: SQLiteDatabase, key: string, value: string): Promise<
 }
 
 function asAvatar(value: string): AvatarId {
-  return (AVATARS as readonly string[]).includes(value) ? (value as AvatarId) : 'ember';
+  if ((AVATARS as readonly string[]).includes(value)) return value as AvatarId;
+  return value === 'vein' ? 'man' : 'woman';
 }
 
 function asMode(value: string | null): AccountMode | null {
@@ -332,12 +334,14 @@ function blankSnap(lastSyncAt: string | null, lastSyncError: string | null): Sna
     wallet: { ironShards: 0, flowPoints: 0 },
     lastSyncAt,
     lastSyncError,
+    coachSeen: true,
   };
 }
 
 async function readSnapUnlocked(db: SQLiteDatabase): Promise<Snap> {
   const lastSyncAt = await meta(db, 'last_sync_at');
   const lastSyncError = await meta(db, 'last_sync_error');
+  const coachSeen = (await meta(db, 'coach_seen')) === '1';
   const userId = await meta(db, 'active_user_id');
   const mode = asMode(await meta(db, 'account_mode'));
   if (!userId || !mode) return blankSnap(lastSyncAt, lastSyncError);
@@ -355,7 +359,12 @@ async function readSnapUnlocked(db: SQLiteDatabase): Promise<Snap> {
     wallet: await readWallet(db, userId),
     lastSyncAt,
     lastSyncError,
+    coachSeen,
   };
+}
+
+export function dismissCoach(db: SQLiteDatabase): Promise<void> {
+  return exclusive(() => setMeta(db, 'coach_seen', '1'));
 }
 
 export function readSnap(db: SQLiteDatabase): Promise<Snap> {
@@ -540,7 +549,7 @@ export async function seedAccount(
       input.id,
       input.email,
       input.displayName,
-      'ember',
+      'woman',
     );
     await db.runAsync('insert into wallets (user_id, iron_shards, flow_points) values (?, 0, 0)', input.id);
     await db.runAsync(

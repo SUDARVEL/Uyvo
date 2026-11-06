@@ -1,4 +1,4 @@
-export const AVATARS = ['ember', 'vein', 'leaf'] as const;
+export const AVATARS = ['woman', 'man'] as const;
 export type AvatarId = (typeof AVATARS)[number];
 
 export const QUEST_KEYS = [

@@ -16,5 +16,5 @@ export function HealthTree({ fruitCount }: { fruitCount: number }) {
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', gap: 6 },
   photo: { width: 200, height: 200, borderRadius: 24, backgroundColor: palette.bg },
-  caption: { color: palette.cream, fontWeight: '700', fontSize: 16 },
+  caption: { color: palette.ink, fontWeight: '600', fontSize: 16 },
 });

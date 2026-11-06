@@ -1,18 +1,12 @@
 export const palette = {
-  bg: '#14080C',
-  raised: '#241016',
-  crimson: '#C1121F',
-  crimsonDeep: '#7A1020',
-  orange: '#FF6B2C',
-  leaf: '#3DDC97',
-  cream: '#F6EDE8',
-  muted: '#C4A8A0',
-  line: '#3A1C24',
-  ink: '#14080C',
-} as const;
-
-export const sashColor = {
-  ember: palette.crimson,
-  vein: palette.orange,
-  leaf: palette.leaf,
+  bg: '#F6F4F1',
+  raised: '#FFFFFF',
+  crimson: '#C23B4A',
+  crimsonDeep: '#8E2432',
+  orange: '#3D4F73',
+  leaf: '#2F7D4A',
+  cream: '#FBF7F2',
+  muted: '#6E6A64',
+  line: '#E6E1D8',
+  ink: '#1C1C1E',
 } as const;

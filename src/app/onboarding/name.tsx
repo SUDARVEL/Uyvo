@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Redirect, useRouter } from 'expo-router';
 
-import { Banner, Body, Button, Eyebrow, Field, Screen, Title } from '@/components/ui';
+import { Banner, Body, Button, Field, Mark, Screen, Title } from '@/components/ui';
 import { validateName } from '@/domain/engine';
 import { useGame } from '@/state/game';
 
@@ -19,10 +19,9 @@ export default function NameScreen() {
 
   return (
     <Screen>
-      <Eyebrow>UYVO</Eyebrow>
+      <Mark size={220} />
       <Title>What is your name?</Title>
       <Body>Use 2 to 24 letters.</Body>
-      {game.snap.mode === 'device' ? <Banner>Saved on this phone.</Banner> : null}
       {error || nameError ? <Banner tone="crimson">{error ?? nameError}</Banner> : null}
       <Field label="Name" value={name} onChangeText={setName} autoCapitalize="words" />
       <Button

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 
-import { Banner, Body, Button, Eyebrow, Field, Screen, Title } from '@/components/ui';
+import { Banner, Body, Button, Field, Mark, Screen, Title } from '@/components/ui';
 import { useGame } from '@/state/game';
 import { palette } from '@/theme';
 
@@ -22,9 +22,9 @@ export default function SignIn() {
   if (!game.configured) {
     return (
       <Screen>
-        <Eyebrow>UYVO</Eyebrow>
+        <Mark size={280} />
         <Title>Build your blood</Title>
-        <Body>Your days stay on this phone. Nothing is sent anywhere yet.</Body>
+        <Body>Eat, drink, and wait. Your picture gets stronger.</Body>
         <Button
           label="Start"
           onPress={() => {
@@ -40,9 +40,9 @@ export default function SignIn() {
   const offline = !game.online;
   return (
     <Screen>
-      <Eyebrow>UYVO</Eyebrow>
+      <Mark size={200} />
       <Title>Sign in</Title>
-      <Body>Your days stay on this phone, then go to your account when you are online.</Body>
+      <Body>Sign in to keep your days.</Body>
       {offline ? <Banner>You need a network to sign in the first time.</Banner> : null}
       {error ? <Banner tone="crimson">{error}</Banner> : null}
       <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />

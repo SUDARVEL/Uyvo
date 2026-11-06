@@ -18,7 +18,7 @@ const navigationTheme = {
     background: palette.bg,
     card: palette.raised,
     primary: palette.orange,
-    text: palette.cream,
+    text: palette.ink,
     border: palette.line,
     notification: palette.crimson,
   },
@@ -50,7 +50,7 @@ export default function RootLayout() {
     <ThemeProvider value={navigationTheme}>
       <SQLiteProvider databaseName="uyvo.db" onInit={migrate}>
         <GameProvider>
-          <StatusBar style="light" />
+          <StatusBar style="dark" />
           <ForgeNotifications />
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }} />
         </GameProvider>

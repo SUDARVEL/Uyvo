@@ -17,6 +17,7 @@ import {
   logQuest,
   readSnap,
   saveAvatar,
+  dismissCoach,
   saveName,
   saveReminders,
   settleTea,
@@ -52,6 +53,7 @@ type GameValue = {
   }) => Promise<string | null>;
   startDigest: () => Promise<string | null>;
   drinkTea: () => Promise<string | null>;
+  dismissCoach: () => Promise<void>;
   syncNow: () => Promise<void>;
 };
 
@@ -67,6 +69,7 @@ const signedOut: Snap = {
   wallet: { ironShards: 0, flowPoints: 0 },
   lastSyncAt: null,
   lastSyncError: null,
+  coachSeen: true,
 };
 
 const GameContext = createContext<GameValue | null>(null);
@@ -207,7 +210,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       saveAvatar: async (avatarId) => apply(await saveAvatar(db, avatarId)),
       setReminders: async (enabled) => {
         if (Platform.OS === 'web') {
-          if (enabled) return 'Reminders work on the phone app, not in this browser.';
+          if (enabled) return 'Reminders work in the app, not in this browser.';
           return apply(await saveReminders(db, false));
         }
         if (enabled) {
@@ -222,9 +225,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
       logQuest: async (input) => apply(await logQuest(db, input)),
       startDigest: async () => apply(await startDigest(db)),
       drinkTea: async () => apply(await drinkTea(db)),
+      dismissCoach: async () => {
+        await dismissCoach(db);
+        await refresh();
+      },
       syncNow: async () => {
         if (!online) {
-          setNotice('No network. Today is saved on this phone.');
+          setNotice('No network.');
           return;
         }
         await runSync();

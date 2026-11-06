@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
 
 import { foodArt } from '@/art';
+import { Coach } from '@/components/coach';
 import { CountdownRing } from '@/components/countdown-ring';
 import { HeroFigure } from '@/components/hero';
 import { Banner, Body, Button, Eyebrow, Screen, Sheet, Title, cardStyle } from '@/components/ui';
@@ -78,6 +79,7 @@ export default function ForgeScreen() {
   const [hint, setHint] = useState<string | null>(null);
   const [confirmTea, setConfirmTea] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [coachStep, setCoachStep] = useState(0);
   const today = localDate(new Date(now));
   const todayLogs = logsOn(game.snap.logs, today);
   const ratio = vesselRatio(todayLogs);
@@ -115,15 +117,26 @@ export default function ForgeScreen() {
     setPending({ quest, step: quest === 'lunch_greens' ? 'food' : 'vitamin', food: null });
   };
 
+  const showCoach = Boolean(profile?.onboardedAt) && !game.snap.coachSeen;
   return (
-    <Screen>
+    <Screen
+      overlay={
+        showCoach ? (
+          <Coach
+            step={coachStep}
+            onNext={() => {
+              if (coachStep >= 3) void game.dismissCoach();
+              else setCoachStep((step) => step + 1);
+            }}
+          />
+        ) : null
+      }>
       <Eyebrow>UYVO</Eyebrow>
       <Title>Today</Title>
-      {game.snap.mode === 'device' ? <Banner>Saved on this phone.</Banner> : null}
-      {game.snap.mode === 'cloud' && !game.online ? <Banner>No network. Today is saved on this phone.</Banner> : null}
+      {game.snap.mode === 'cloud' && !game.online ? <Banner>No network.</Banner> : null}
       {game.notice ? <Banner tone="leaf">{game.notice}</Banner> : null}
       {hint ? <Banner tone="crimson">{hint}</Banner> : null}
-      <HeroFigure state={heroState(ratio)} avatar={profile?.avatarId ?? 'ember'} name={profile?.displayName ?? 'Hero'} />
+      <HeroFigure state={heroState(ratio)} avatar={profile?.avatarId ?? 'woman'} name={profile?.displayName ?? 'Friend'} />
       <View style={styles.track}>
         <View style={[styles.trackFill, { width: `${Math.round(ratio * 100)}%` }]} />
       </View>
@@ -277,11 +290,11 @@ export default function ForgeScreen() {
 
 const styles = StyleSheet.create({
   track: { height: 8, borderRadius: 4, backgroundColor: palette.line, overflow: 'hidden' },
-  trackFill: { height: 8, borderRadius: 4, backgroundColor: palette.orange },
+  trackFill: { height: 8, borderRadius: 4, backgroundColor: palette.crimson },
   vesselRow: { flexDirection: 'row', gap: 16, alignItems: 'center' },
   totals: { flex: 1, gap: 4 },
-  totalLabel: { color: palette.muted, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
-  totalValue: { color: palette.cream, fontSize: 18, fontWeight: '800' },
+  totalLabel: { color: palette.muted, fontSize: 14 },
+  totalValue: { color: palette.ink, fontSize: 22, fontWeight: '600' },
   lifetime: { color: palette.leaf, fontSize: 14 },
   row: {
     flexDirection: 'row',
@@ -294,14 +307,14 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   icon: { width: 48, height: 48, borderRadius: 12, backgroundColor: palette.bg },
-  next: { borderColor: palette.orange },
+  next: { borderColor: palette.line },
   nextRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   nextArt: { width: 72, height: 72, borderRadius: 16, backgroundColor: palette.bg },
   rowCopy: { flex: 1, gap: 2 },
-  quest: { color: palette.cream, fontSize: 17, fontWeight: '800' },
+  quest: { color: palette.ink, fontSize: 17, fontWeight: '600' },
   detail: { color: palette.muted },
-  pill: { backgroundColor: '#3A2014', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  pillText: { color: palette.orange, fontWeight: '800' },
+  pill: { backgroundColor: '#F8E6E8', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  pillText: { color: palette.crimson, fontWeight: '600' },
   check: {
     width: 28,
     height: 28,
@@ -312,7 +325,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkOn: { backgroundColor: palette.leaf, borderColor: palette.leaf },
-  checkMark: { color: palette.ink, fontWeight: '800' },
+  checkMark: { color: '#FFFFFF', fontWeight: '700' },
   tea: { borderColor: palette.crimson },
-  monster: { color: palette.orange, fontSize: 12, letterSpacing: 1.4, fontWeight: '700', textTransform: 'uppercase' },
+  monster: { color: palette.muted, fontSize: 14, fontWeight: '600' },
 });

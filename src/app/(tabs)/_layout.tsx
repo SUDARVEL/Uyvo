@@ -15,7 +15,8 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: { backgroundColor: palette.raised, borderTopColor: palette.line },
-        tabBarActiveTintColor: palette.orange,
+        tabBarIcon: () => null,
+        tabBarActiveTintColor: palette.ink,
         tabBarInactiveTintColor: palette.muted,
       }}>
       <Tabs.Screen name="forge" options={{ title: 'Today' }} />

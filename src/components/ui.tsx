@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import {
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -14,22 +15,33 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { palette } from '@/theme';
 
-export function Screen({ children }: { children: ReactNode }) {
+export function Screen({ children, overlay }: { children: ReactNode; overlay?: ReactNode }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.frame}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {children}
         </ScrollView>
+        {overlay}
       </View>
     </SafeAreaView>
+  );
+}
+
+export function Mark({ size = 220 }: { size?: number }) {
+  return (
+    <Image
+      source={require('../../assets/images/uyvo-logo.png')}
+      accessibilityLabel="Uyvo"
+      style={{ width: size, height: size, alignSelf: 'center' }}
+    />
   );
 }
 
 export function Boot() {
   return (
     <View style={styles.boot}>
-      <Text style={styles.brand}>Uyvo</Text>
+      <Mark size={180} />
       <Text style={styles.muted}>One moment…</Text>
     </View>
   );
@@ -48,7 +60,7 @@ export function Body({ children, style }: { children: ReactNode; style?: TextSty
 }
 
 export function Banner({ children, tone = 'orange' }: { children: ReactNode; tone?: 'orange' | 'leaf' | 'crimson' }) {
-  const background = tone === 'leaf' ? '#143328' : tone === 'crimson' ? '#3A1018' : '#3A2014';
+  const background = tone === 'leaf' ? '#E5F4EA' : tone === 'crimson' ? '#F8E6E8' : '#EEF1F6';
   return (
     <View style={[styles.banner, { backgroundColor: background }]}>
       <Text style={styles.bannerText}>{children}</Text>
@@ -100,8 +112,8 @@ export function Button({
   tone?: 'orange' | 'crimson' | 'leaf' | 'quiet';
 }) {
   const background =
-    tone === 'crimson' ? palette.crimson : tone === 'leaf' ? palette.leaf : tone === 'quiet' ? palette.raised : palette.orange;
-  const color = tone === 'quiet' || tone === 'crimson' ? palette.cream : palette.ink;
+    tone === 'crimson' ? palette.crimson : tone === 'leaf' ? palette.leaf : tone === 'quiet' ? palette.raised : palette.ink;
+  const color = tone === 'quiet' ? palette.ink : '#FFFFFF';
   return (
     <Pressable
       accessibilityRole="button"
@@ -109,6 +121,7 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        tone === 'quiet' ? styles.quiet : null,
         { backgroundColor: background, opacity: disabled ? 0.4 : pressed ? 0.8 : 1 },
       ]}>
       <Text style={[styles.buttonText, { color }]}>{label}</Text>
@@ -148,18 +161,18 @@ const styles = StyleSheet.create({
   frame: { flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center' },
   content: { padding: 20, paddingBottom: 48, gap: 14 },
   boot: { flex: 1, backgroundColor: palette.bg, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  brand: { color: palette.orange, fontSize: 42, fontWeight: '800' },
-  eyebrow: { color: palette.orange, fontSize: 12, letterSpacing: 2, fontWeight: '700' },
-  title: { color: palette.cream, fontSize: 32, fontWeight: '800' },
-  body: { color: palette.cream, fontSize: 16, lineHeight: 22 },
+  brand: { color: palette.ink, fontSize: 40, fontWeight: '600' },
+  eyebrow: { color: palette.muted, fontSize: 13, fontWeight: '600' },
+  title: { color: palette.ink, fontSize: 34, fontWeight: '600' },
+  body: { color: palette.ink, fontSize: 16, lineHeight: 22 },
   muted: { color: palette.muted, fontSize: 15 },
   banner: { borderRadius: 14, padding: 12 },
-  bannerText: { color: palette.cream, fontSize: 14, lineHeight: 20 },
+  bannerText: { color: palette.ink, fontSize: 14, lineHeight: 20 },
   field: { gap: 6 },
   label: { color: palette.muted, fontSize: 13 },
   input: {
     backgroundColor: palette.raised,
-    color: palette.cream,
+    color: palette.ink,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: palette.line,
@@ -168,7 +181,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   button: { borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  buttonText: { fontSize: 16, fontWeight: '800' },
+  quiet: { borderWidth: 1, borderColor: palette.line },
+  buttonText: { fontSize: 16, fontWeight: '600' },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: palette.raised,
@@ -179,7 +193,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: palette.line,
   },
-  sheetTitle: { color: palette.cream, fontSize: 22, fontWeight: '800' },
+  sheetTitle: { color: palette.ink, fontSize: 22, fontWeight: '600' },
   card: {
     backgroundColor: palette.raised,
     borderRadius: 18,

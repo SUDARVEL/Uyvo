@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 
-import { Banner, Body, Button, Eyebrow, Field, Screen, Title } from '@/components/ui';
+import { Banner, Body, Button, Field, Mark, Screen, Title } from '@/components/ui';
 import { useGame } from '@/state/game';
 import { palette } from '@/theme';
 
@@ -27,7 +27,7 @@ export default function SignUp() {
 
   return (
     <Screen>
-      <Eyebrow>UYVO</Eyebrow>
+      <Mark size={180} />
       <Title>Make an account</Title>
       <Body>Email and a password of at least 8 letters. Your name comes next.</Body>
       {offline ? <Banner>You need a network to make an account.</Banner> : null}

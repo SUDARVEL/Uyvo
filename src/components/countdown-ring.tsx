@@ -26,7 +26,7 @@ export function CountdownRing({
           cx={center}
           cy={center}
           r={radius}
-          stroke={palette.orange}
+          stroke={palette.crimson}
           strokeWidth={stroke}
           fill="none"
           strokeDasharray={`${circumference * ratio} ${circumference}`}
@@ -44,5 +44,5 @@ export function CountdownRing({
 const styles = StyleSheet.create({
   wrap: { width: 168, height: 168, alignSelf: 'center' },
   label: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
-  time: { color: palette.cream, fontSize: 32, fontWeight: '800' },
+  time: { color: palette.ink, fontSize: 32, fontWeight: '600' },
 });

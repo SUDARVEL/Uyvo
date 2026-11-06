@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 
-import { HeroFigure } from '@/components/hero';
-import { Banner, Body, Button, Screen, Title } from '@/components/ui';
-import { RIBBON_LABEL } from '@/domain/copy';
+import { heroArt } from '@/art';
+import { Banner, Body, Button, Mark, Screen, Title } from '@/components/ui';
+import { PERSON_LABEL } from '@/domain/copy';
 import { AVATARS, type AvatarId } from '@/domain/engine';
 import { useGame } from '@/state/game';
-import { palette, sashColor } from '@/theme';
+import { palette } from '@/theme';
 
 export default function AvatarScreen() {
   const game = useGame();
@@ -15,7 +15,6 @@ export default function AvatarScreen() {
   const [avatar, setAvatar] = useState<AvatarId | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const name = game.snap.profile?.displayName ?? 'Hero';
 
   if (!game.ready) return null;
   if (game.snap.mode === 'signed_out') return <Redirect href="/sign-in" />;
@@ -23,8 +22,9 @@ export default function AvatarScreen() {
 
   return (
     <Screen>
-      <Title>Pick a color</Title>
-      <Body>The color is a ribbon. Food changes the picture.</Body>
+      <Mark size={168} />
+      <Title>Who are you?</Title>
+      <Body>Food changes the picture.</Body>
       {error ? <Banner tone="crimson">{error}</Banner> : null}
       <View style={styles.row}>
         {AVATARS.map((choice) => {
@@ -34,13 +34,13 @@ export default function AvatarScreen() {
               key={choice}
               accessibilityRole="button"
               onPress={() => setAvatar(choice)}
-              style={[styles.choice, { borderColor: selected ? sashColor[choice] : palette.line }]}>
-              <Text style={{ color: sashColor[choice], fontWeight: '800' }}>{RIBBON_LABEL[choice]}</Text>
+              style={[styles.choice, { borderColor: selected ? palette.crimson : palette.line }]}>
+              <Image source={heroArt[choice].pale} style={styles.preview} resizeMode="cover" />
+              <Text style={styles.label}>{PERSON_LABEL[choice]}</Text>
             </Pressable>
           );
         })}
       </View>
-      {avatar ? <HeroFigure state="pale" avatar={avatar} name={name} /> : null}
       <Button
         label="Start today"
         disabled={!avatar || busy}
@@ -60,13 +60,16 @@ export default function AvatarScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 8 },
+  row: { flexDirection: 'row', gap: 12 },
   choice: {
     flex: 1,
     borderWidth: 2,
-    borderRadius: 14,
-    paddingVertical: 12,
+    borderRadius: 18,
+    padding: 10,
     alignItems: 'center',
+    gap: 8,
     backgroundColor: palette.raised,
   },
+  preview: { width: '100%', height: 168, borderRadius: 12, backgroundColor: palette.cream },
+  label: { color: palette.ink, fontSize: 18, fontWeight: '600' },
 });

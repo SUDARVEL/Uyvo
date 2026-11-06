@@ -44,8 +44,8 @@ export default function VeinTrainScreen() {
 
 const styles = StyleSheet.create({
   streakBlock: { alignItems: 'center', gap: 2, paddingVertical: 8 },
-  number: { color: palette.cream, fontSize: 84, fontWeight: '800', lineHeight: 88 },
-  streakLabel: { color: palette.orange, fontSize: 16, fontWeight: '800' },
+  number: { color: palette.ink, fontSize: 84, fontWeight: '600', lineHeight: 88 },
+  streakLabel: { color: palette.muted, fontSize: 16, fontWeight: '600' },
   medals: { flexDirection: 'row', gap: 8 },
   medal: {
     flex: 1,
@@ -57,8 +57,8 @@ const styles = StyleSheet.create({
     borderColor: palette.line,
     padding: 10,
   },
-  medalMark: { color: palette.orange, fontSize: 22 },
-  badge: { color: palette.cream, fontSize: 12, fontWeight: '800', textAlign: 'center' },
+  medalMark: { color: palette.crimson, fontSize: 22 },
+  badge: { color: palette.ink, fontSize: 14, fontWeight: '600', textAlign: 'center' },
   meta: { color: palette.muted, fontSize: 11, textAlign: 'center' },
   earned: { borderColor: palette.leaf },
   locked: { opacity: 0.45 },

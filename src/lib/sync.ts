@@ -75,12 +75,12 @@ export async function fetchAccount(userId: string, email: string): Promise<Serve
   }
 
   const profileRow = profileResult.data as Row;
-  const avatar = text(profileRow.avatar_id, 'ember');
+  const avatar = text(profileRow.avatar_id, 'woman');
   const profile: Profile = {
     id: userId,
     email,
     displayName: text(profileRow.display_name, 'Hero'),
-    avatarId: avatar === 'vein' || avatar === 'leaf' || avatar === 'ember' ? avatar : 'ember',
+    avatarId: avatar === 'man' || avatar === 'woman' ? avatar : avatar === 'vein' ? 'man' : 'woman',
     onboardedAt: profileRow.onboarded_at == null ? null : text(profileRow.onboarded_at),
     remindersEnabled: flag(profileRow.reminders_enabled),
   };
