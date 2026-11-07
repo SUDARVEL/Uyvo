@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
-import { openingArt } from '@/art';
 import { font, palette } from '@/theme';
 
 type Props = {
@@ -17,8 +17,27 @@ type Props = {
 const FULL = { height: 236, top: 82, bottom: 24, art: 200, artTop: 44, tick: 36, tickBorder: 3, tickIcon: 20 };
 const SMALL = { height: 156, top: 54, bottom: 16, art: 132, artTop: 29, tick: 30, tickBorder: 2.5, tickIcon: 16 };
 
+function archPath(width: number, height: number, top: number, bottom: number): string {
+  const t = Math.min(top, width / 2, height / 2);
+  const b = Math.min(bottom, width / 2, height / 2);
+  return [
+    `M ${t} 0`,
+    `H ${width - t}`,
+    `A ${t} ${t} 0 0 1 ${width} ${t}`,
+    `V ${height - b}`,
+    `A ${b} ${b} 0 0 1 ${width - b} ${height}`,
+    `H ${b}`,
+    `A ${b} ${b} 0 0 1 0 ${height - b}`,
+    `V ${t}`,
+    `A ${t} ${t} 0 0 1 ${t} 0`,
+    'Z',
+  ].join(' ');
+}
+
 export function PictureCard({ label, sub, art, selected, onPress, compact }: Props) {
   const size = compact ? SMALL : FULL;
+  const [box, setBox] = useState<{ width: number; height: number } | null>(null);
+  const border = 3;
   const radius = {
     borderTopLeftRadius: size.top,
     borderTopRightRadius: size.top,
@@ -39,16 +58,27 @@ export function PictureCard({ label, sub, art, selected, onPress, compact }: Pro
               radius,
               selected ? styles.archOn : styles.archOff,
               selected ? { borderColor: palette.crimson } : null,
-            ]}>
-            {selected ? (
-              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
+            ]}
+            onLayout={(event) => {
+              const { width, height } = event.nativeEvent.layout;
+              setBox({ width: width - border * 2, height: height - border * 2 });
+            }}>
+            {selected && box && box.width > 0 && box.height > 0 ? (
+              <Svg
+                style={StyleSheet.absoluteFill}
+                width={box.width}
+                height={box.height}
+                viewBox={`0 0 ${box.width} ${box.height}`}>
                 <Defs>
                   <LinearGradient id="pictureCardGradient" x1="0" y1="0" x2="0" y2="1">
                     <Stop offset="0" stopColor="#FFF2ED" />
                     <Stop offset="1" stopColor="#F5CCCC" />
                   </LinearGradient>
                 </Defs>
-                <Rect x="0" y="0" width="100%" height="100%" fill="url(#pictureCardGradient)" />
+                <Path
+                  d={archPath(box.width, box.height, size.top - border, size.bottom - border)}
+                  fill="url(#pictureCardGradient)"
+                />
               </Svg>
             ) : null}
             <View style={[styles.artRow, { top: size.artTop }]}>
@@ -66,11 +96,15 @@ export function PictureCard({ label, sub, art, selected, onPress, compact }: Pro
               styles.tick,
               { width: size.tick, height: size.tick, borderRadius: size.tick / 2, borderWidth: size.tickBorder },
             ]}>
-            <Image
-              source={openingArt.checkWhite}
-              style={{ width: size.tickIcon, height: size.tickIcon }}
-              contentFit="contain"
-            />
+            <Svg width={size.tickIcon} height={size.tickIcon} viewBox="0 0 16 16" fill="none">
+              <Path
+                d="M13.3333 4L6 11.3333L2.66667 8"
+                stroke="#FFFFFF"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
           </View>
         ) : null}
       </View>
@@ -102,14 +136,16 @@ const styles = StyleSheet.create({
   cardSmall: { gap: 8 },
   media: { width: '100%' },
   shadow: { flex: 1 },
-  shadowOn: {
-    shadowColor: '#B2243D',
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 6,
-    backgroundColor: '#FFF2ED',
-  },
+  shadowOn: Platform.select({
+    android: {},
+    default: {
+      shadowColor: '#B2243D',
+      shadowOpacity: 0.22,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 14 },
+      backgroundColor: '#FFF2ED',
+    },
+  }),
   arch: { flex: 1, overflow: 'hidden' },
   archOn: { borderWidth: 3 },
   archOff: { backgroundColor: palette.raised, borderWidth: 1.5, borderColor: palette.line },
@@ -127,7 +163,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    elevation: 8,
+    zIndex: 2,
   },
   copy: { alignItems: 'center', gap: 2 },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
