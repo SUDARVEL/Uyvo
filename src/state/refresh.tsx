@@ -1,9 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Alert, AppState, Platform, RefreshControl } from 'react-native';
+import { AppState, Platform, RefreshControl, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import * as Updates from 'expo-updates';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { notifyUpdateReady } from '@/lib/notifications';
+import { NoticeCard } from '@/components/notice';
+import { UPDATE_NOTICE, noticeForNow } from '@/domain/copy';
+import { listenForNotices, notifyUpdateReady } from '@/lib/notifications';
 import { palette } from '@/theme';
+
+const SEEN_UPDATE = 'uyvo-seen-update';
+
+type Notice = { title: string; body: string; onPress?: () => void };
 
 type RefreshValue = {
   refreshing: boolean;
@@ -13,6 +22,9 @@ type RefreshValue = {
 const RefreshContext = createContext<RefreshValue | null>(null);
 
 export function RefreshProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [notice, setNotice] = useState<Notice | null>(null);
   const updates = Updates.useUpdates();
   const updatesRef = useRef(updates);
   updatesRef.current = updates;
@@ -21,17 +33,29 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
   const flight = useRef<Promise<void> | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const showMeal = useCallback(() => {
+    const reminder = noticeForNow(new Date());
+    setNotice({
+      title: reminder.title,
+      body: reminder.body,
+      onPress: () => router.push('/forge'),
+    });
+  }, [router]);
+
   const announce = useCallback(async (id: string) => {
     gate.current = id;
+    const note = { title: 'Something new is ready', body: 'Tap to open it.' };
     try {
-      await notifyUpdateReady();
+      await notifyUpdateReady(note.title, note.body);
     } catch {
-      // The on-screen alert still tells them an update is ready.
+      // The card still tells them an update is ready.
     }
-    Alert.alert('Uyvo has something new', 'Tap to see it.', [
-      { text: 'Later', style: 'cancel' },
-      { text: 'See it', onPress: () => void Updates.reloadAsync() },
-    ]);
+    setNotice({
+      ...note,
+      onPress: () => {
+        void Updates.reloadAsync();
+      },
+    });
   }, []);
 
   const runCheck = useCallback(
@@ -42,9 +66,7 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
         if (Platform.OS === 'web' || !Updates.isEnabled) {
           const pulled = wantsNotice.current;
           wantsNotice.current = false;
-          if (pulled && Platform.OS !== 'web') {
-            Alert.alert('Uyvo is up to date', 'Pull down any time to check again.');
-          }
+          if (pulled && Platform.OS !== 'web') showMeal();
           return;
         }
         const seen = gate.current;
@@ -70,7 +92,7 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
             return;
           }
           gate.current = seen === 'busy' ? null : seen;
-          if (pulled) Alert.alert('Uyvo is up to date', 'Pull down any time to check again.');
+          if (pulled) showMeal();
         } catch {
           const pulled = wantsNotice.current;
           wantsNotice.current = false;
@@ -85,7 +107,7 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
             return;
           }
           gate.current = seen === 'busy' ? null : seen;
-          if (pulled) Alert.alert('Could not refresh', 'Check the internet and pull down again.');
+          if (pulled) setNotice({ title: 'Could not refresh', body: 'Check the internet and pull down again.' });
         }
       })();
       flight.current = job.finally(() => {
@@ -93,7 +115,7 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
       });
       return flight.current;
     },
-    [announce],
+    [announce, showMeal],
   );
 
   useEffect(() => {
@@ -128,9 +150,40 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
     return () => remove();
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS === 'web' || !Updates.isEnabled || Updates.isEmbeddedLaunch || !Updates.updateId) return;
+    const id = Updates.updateId;
+    let alive = true;
+    void AsyncStorage.getItem(SEEN_UPDATE).then((seen) => {
+      if (!alive || seen === id) return;
+      setNotice(UPDATE_NOTICE);
+      void AsyncStorage.setItem(SEEN_UPDATE, id);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let remove: () => void = () => undefined;
+    let alive = true;
+    void listenForNotices((title, body) => {
+      setNotice({ title, body, onPress: () => router.push('/forge') });
+    }).then((unsubscribe) => {
+      if (!alive) unsubscribe();
+      else remove = unsubscribe;
+    });
+    return () => {
+      alive = false;
+      remove();
+    };
+  }, [router]);
+
   const refresh = useCallback(async () => {
     if (Platform.OS === 'web') {
-      window.location.reload();
+      setRefreshing(true);
+      showMeal();
+      setRefreshing(false);
       return;
     }
     setRefreshing(true);
@@ -139,10 +192,27 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
     } finally {
       setRefreshing(false);
     }
-  }, [runCheck]);
+  }, [runCheck, showMeal]);
 
   const value = useMemo(() => ({ refreshing, refresh }), [refresh, refreshing]);
-  return <RefreshContext.Provider value={value}>{children}</RefreshContext.Provider>;
+  return (
+    <RefreshContext.Provider value={value}>
+      {children}
+      {notice ? (
+        <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + 8, left: 12, right: 12, zIndex: 40 }}>
+          <NoticeCard
+            title={notice.title}
+            body={notice.body}
+            onPress={() => {
+              const action = notice.onPress;
+              setNotice(null);
+              action?.();
+            }}
+          />
+        </View>
+      ) : null}
+    </RefreshContext.Provider>
+  );
 }
 
 export function PullRefresh() {
