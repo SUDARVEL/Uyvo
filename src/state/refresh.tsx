@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, Platform, RefreshControl, View } from 'react-native';
+import { AppState, Platform, RefreshControl, View, type StyleProp, type ViewStyle } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import * as Updates from 'expo-updates';
@@ -195,6 +195,58 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
   }, [runCheck, showMeal]);
 
   const value = useMemo(() => ({ refreshing, refresh }), [refresh, refreshing]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    let startY: number | null = null;
+    let lastY: number | null = null;
+    let atTop = false;
+    let pulled = false;
+    const scrollTop = (target: EventTarget | null) => {
+      let node = target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
+      while (node) {
+        if (node.scrollHeight > node.clientHeight + 4 && node.scrollTop > 2) return false;
+        node = node.parentElement;
+      }
+      return true;
+    };
+    const down = (event: PointerEvent) => {
+      startY = event.clientY;
+      lastY = event.clientY;
+      pulled = false;
+      atTop = scrollTop(event.target);
+    };
+    const fire = (y: number, limit: number) => {
+      if (pulled || startY == null || !atTop) return;
+      if (y - startY < limit) return;
+      pulled = true;
+      void refresh();
+    };
+    const move = (event: PointerEvent) => {
+      lastY = event.clientY;
+      fire(event.clientY, 64);
+    };
+    const up = (event: PointerEvent) => {
+      fire(event.clientY, 64);
+      startY = null;
+    };
+    // The web scroll view cancels the pointer once a drag starts, and that event's clientY is 0.
+    const cancel = () => {
+      if (lastY != null) fire(lastY, 8);
+      startY = null;
+    };
+    window.addEventListener('pointerdown', down, true);
+    window.addEventListener('pointermove', move, true);
+    window.addEventListener('pointerup', up, true);
+    window.addEventListener('pointercancel', cancel, true);
+    return () => {
+      window.removeEventListener('pointerdown', down, true);
+      window.removeEventListener('pointermove', move, true);
+      window.removeEventListener('pointerup', up, true);
+      window.removeEventListener('pointercancel', cancel, true);
+    };
+  }, [refresh]);
+
   return (
     <RefreshContext.Provider value={value}>
       {children}
@@ -215,7 +267,8 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function PullRefresh() {
+// Android and web pass the scroll view in as children. It has to be rendered or the page is blank.
+export function PullRefresh({ children, style }: { children?: ReactNode; style?: StyleProp<ViewStyle> }) {
   const value = useContext(RefreshContext);
   return (
     <RefreshControl
@@ -223,6 +276,8 @@ export function PullRefresh() {
       onRefresh={() => void value?.refresh()}
       tintColor={palette.crimson}
       colors={[palette.crimson]}
-    />
+      style={style}>
+      {children}
+    </RefreshControl>
   );
 }
