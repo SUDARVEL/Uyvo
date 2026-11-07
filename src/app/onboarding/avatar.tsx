@@ -4,7 +4,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { openingArt } from '@/art';
+import { heroArt, openingArt } from '@/art';
 import { OnboardingBar } from '@/app/onboarding/name';
 import { PictureCard } from '@/components/picture-card';
 import { Button } from '@/components/ui';
@@ -14,10 +14,10 @@ import { PullRefresh } from '@/state/refresh';
 import { font, palette } from '@/theme';
 
 const growth = [
-  { label: 'Low', art: openingArt.womanLow, bg: palette.sunken, on: true },
-  { label: 'Tired', art: openingArt.womanTired, bg: palette.sunken, on: false },
-  { label: 'Strong', art: openingArt.womanStrong, bg: palette.blush, on: false },
-  { label: 'Full', art: openingArt.womanFull, bg: palette.amberSoft, on: false },
+  { label: 'Low', state: 'pale', bg: palette.sunken, on: true },
+  { label: 'Tired', state: 'tired', bg: palette.sunken, on: false },
+  { label: 'Strong', state: 'armored', bg: palette.blush, on: false },
+  { label: 'Full', state: 'glowing', bg: palette.amberSoft, on: false },
 ] as const;
 
 export default function AvatarScreen() {
@@ -60,7 +60,7 @@ export default function AvatarScreen() {
               <View key={item.label} style={styles.growItem}>
                 <View style={styles.step}>
                   <View style={[styles.bubble, { backgroundColor: item.bg }, item.on ? styles.bubbleOn : null]}>
-                    <Image source={item.art} style={styles.bubbleArt} contentFit="contain" />
+                    <Image source={heroArt[avatar][item.state]} style={styles.bubbleArt} contentFit="contain" />
                   </View>
                   <Text style={[styles.bubbleLabel, item.on ? styles.bubbleLabelOn : null]}>{item.label}</Text>
                 </View>

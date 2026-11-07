@@ -3,17 +3,17 @@ import type { ImageSourcePropType } from 'react-native';
 import type { AvatarId, HeroState } from '@/domain/engine';
 
 const woman: Record<HeroState, ImageSourcePropType> = {
-  pale: require('../assets/figma/woman-low.jpg'),
-  tired: require('../assets/figma/woman-tired.jpg'),
-  armored: require('../assets/figma/woman-strong.jpg'),
-  glowing: require('../assets/figma/woman-full.jpg'),
+  pale: require('../assets/figma/woman-low.png'),
+  tired: require('../assets/figma/woman-tired.png'),
+  armored: require('../assets/figma/woman-strong.png'),
+  glowing: require('../assets/figma/woman-full.png'),
 };
 
 const man: Record<HeroState, ImageSourcePropType> = {
-  pale: require('../assets/figma/man-low.jpg'),
-  tired: require('../assets/art/plate-man-tired.jpg'),
-  armored: require('../assets/art/plate-man-strong.jpg'),
-  glowing: require('../assets/art/plate-man-full.jpg'),
+  pale: require('../assets/figma/man-low.png'),
+  tired: require('../assets/figma/man-tired.png'),
+  armored: require('../assets/figma/man-strong.png'),
+  glowing: require('../assets/figma/man-full.png'),
 };
 
 export const heroArt: Record<AvatarId, Record<HeroState, ImageSourcePropType>> = { woman, man };
