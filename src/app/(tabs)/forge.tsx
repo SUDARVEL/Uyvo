@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View, type ImageSourcePropType } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { foodArt, heroArt, treeArt } from '@/art';
@@ -19,6 +19,7 @@ import {
   type HeroState,
   type VitaminFood,
 } from '@/domain/engine';
+import { foodLabel, planStep, type PlanKey } from '@/domain/plan';
 import { useGame } from '@/state/game';
 import { font, palette } from '@/theme';
 
@@ -45,11 +46,15 @@ function OrderRow({
   detail,
   art,
   state,
+  foodName,
+  onRename,
 }: {
   title: string;
   detail: string;
   art: ImageSourcePropType;
   state: 'current' | 'locked' | 'done';
+  foodName?: string;
+  onRename?: (name: string) => void;
 }) {
   return (
     <View style={[styles.order, state === 'locked' ? styles.locked : null]}>
@@ -59,6 +64,7 @@ function OrderRow({
       <View style={styles.grow}>
         <Text style={[styles.orderTitle, state === 'locked' ? styles.faint : null]}>{title}</Text>
         <Text style={styles.orderDetail}>{detail}</Text>
+        {onRename ? <FoodName compact name={foodName ?? ''} onSave={onRename} /> : null}
       </View>
       {state === 'done' ? (
         <View style={styles.doneDot}>
@@ -123,6 +129,8 @@ export default function ForgeScreen() {
   const current = steps.findIndex((step) => !step);
 
   const showCoach = Boolean(profile?.onboardedAt) && !game.snap.coachSeen;
+  const step = (key: PlanKey) => planStep(game.plan, key);
+  const named = (key: PlanKey) => foodLabel(game.plan, game.foods, key);
 
   const logIron = (questKey: 'morning_shot' | 'midmorning_juice' | 'lunch_greens') => {
     run(() =>
@@ -192,13 +200,15 @@ export default function ForgeScreen() {
           <NextCard
             index={1}
             art={foodArt.morning_shot}
-            title="Drink the soaked dry fruit"
-            body="Dates and raisins soaked overnight. Drink the water, eat the fruit."
+            title={step('morning_shot').title}
+            body={step('morning_shot').body}
             chips={lemon ? ['+20 iron', 'Morning'] : ['+10 iron', 'Morning']}
             lemon={lemon}
             onLemon={setLemon}
             doubled="Doubles the iron → 20"
-            action="I drank it"
+            foodName={game.foods.morning_shot ?? ''}
+            onFoodName={(name) => void game.saveFood('morning_shot', name)}
+            action={step('morning_shot').action}
             busy={busy}
             onAction={() => logIron('morning_shot')}
           />
@@ -206,13 +216,15 @@ export default function ForgeScreen() {
           <NextCard
             index={2}
             art={foodArt.midmorning_juice}
-            title="Drink the red juice"
-            body="Beetroot or pomegranate juice. Drink it before lunch."
+            title={step('midmorning_juice').title}
+            body={step('midmorning_juice').body}
             chips={lemon ? ['+30 iron', '+5 flow'] : ['+15 iron', '+5 flow']}
             lemon={lemon}
             onLemon={setLemon}
             doubled="Doubles the iron → 30"
-            action="I drank it"
+            foodName={game.foods.midmorning_juice ?? ''}
+            onFoodName={(name) => void game.saveFood('midmorning_juice', name)}
+            action={step('midmorning_juice').action}
             busy={busy}
             onAction={() => logIron('midmorning_juice')}
           />
@@ -220,15 +232,17 @@ export default function ForgeScreen() {
           <NextCard
             index={3}
             art={foodArt.lunch_greens}
-            title="Eat green leaves"
-            body="Keerai, spinach, or beetroot. Then the 60 minute wait."
+            title={step('lunch_greens').title}
+            body={step('lunch_greens').body}
             chips={lemon ? ['+30 iron', 'Lunch'] : ['+15 iron', 'Lunch']}
             foods={food}
             onFood={setFood}
             lemon={lemon}
             onLemon={setLemon}
             doubled="Doubles the iron → 30"
-            action="I ate it"
+            foodName={game.foods.lunch_greens ?? ''}
+            onFoodName={(name) => void game.saveFood('lunch_greens', name)}
+            action={step('lunch_greens').action}
             busy={busy}
             onAction={() => logIron('lunch_greens')}
           />
@@ -236,10 +250,10 @@ export default function ForgeScreen() {
           <NextCard
             index={4}
             art={foodArt.tea}
-            title="Wait 60 minutes"
-            body="No tea or coffee. Water is still fine."
+            title={step('wait').title}
+            body={step('wait').body}
             chips={['No tea', '60 min']}
-            action="Start the wait"
+            action={step('wait').action}
             busy={busy}
             onAction={() => run(() => game.startDigest())}
           />
@@ -262,8 +276,8 @@ export default function ForgeScreen() {
           <NextCard
             index={5}
             art={treeArt.fruit}
-            title="You waited"
-            body="Today’s blood food is done. Water, banana, and a walk are still open."
+            title={step('bonus').title}
+            body={step('bonus').body}
             chips={['+5 iron']}
           />
         )}
@@ -274,32 +288,38 @@ export default function ForgeScreen() {
         <Text style={styles.sectionMeta}>{doneCount} of 5 done</Text>
       </View>
       <OrderRow
-        title="Soaked dry fruit"
-        detail="10 iron · ×2 with lemon or guava"
+        title={named('morning_shot')}
+        detail={step('morning_shot').detail}
         art={foodArt.morning_shot}
         state={morningDone ? 'done' : 'current'}
+        foodName={game.foods.morning_shot ?? ''}
+        onRename={(name) => void game.saveFood('morning_shot', name)}
       />
       <OrderRow
-        title="Red juice"
-        detail="15 iron · 5 flow"
+        title={named('midmorning_juice')}
+        detail={step('midmorning_juice').detail}
         art={foodArt.midmorning_juice}
         state={juiceDone ? 'done' : morningDone ? 'current' : 'locked'}
+        foodName={game.foods.midmorning_juice ?? ''}
+        onRename={(name) => void game.saveFood('midmorning_juice', name)}
       />
       <OrderRow
-        title="Green leaves"
-        detail="15 iron · keerai, spinach, beetroot"
+        title={named('lunch_greens')}
+        detail={step('lunch_greens').detail}
         art={foodArt.lunch_greens}
         state={greensDone ? 'done' : juiceDone ? 'current' : 'locked'}
+        foodName={game.foods.lunch_greens ?? ''}
+        onRename={(name) => void game.saveFood('lunch_greens', name)}
       />
       <OrderRow
-        title="Wait 60 minutes"
-        detail="No tea · water is fine"
+        title={step('wait').title}
+        detail={step('wait').detail}
         art={foodArt.tea}
         state={waited || drank ? 'done' : greensDone ? 'current' : 'locked'}
       />
       <OrderRow
-        title="You waited"
-        detail="+5 iron bonus"
+        title={step('bonus').title}
+        detail={step('bonus').detail}
         art={treeArt.fruit}
         state={waited ? 'done' : 'locked'}
       />
@@ -313,8 +333,8 @@ export default function ForgeScreen() {
           <Image source={foodArt.water} resizeMode="contain" style={styles.fill} />
         </View>
         <View style={styles.grow}>
-          <Text style={styles.orderTitle}>Water</Text>
-          <Text style={styles.orderDetail}>{glasses} of 12 glasses · 5 flow each</Text>
+          <Text style={styles.orderTitle}>{step('water').title}</Text>
+          <Text style={styles.orderDetail}>{glasses} of 12 glasses · {step('water').detail}</Text>
         </View>
         <Pressable
           accessibilityRole="button"
@@ -334,26 +354,30 @@ export default function ForgeScreen() {
           <Icon name="plus" size={16} />
         </Pressable>
       </View>
-      <Pressable
-        accessibilityRole="button"
-        disabled={busy || done.has('banana')}
-        onPress={() => run(() => game.logQuest({ questKey: 'banana' }))}
-        style={styles.order}>
+      <View style={styles.order}>
         <View style={styles.thumbBox}>
           <Image source={foodArt.banana} resizeMode="contain" style={styles.fill} />
         </View>
         <View style={styles.grow}>
-          <Text style={styles.orderTitle}>Banana</Text>
-          <Text style={styles.orderDetail}>5 flow · once today</Text>
+          <Text style={styles.orderTitle}>{named('banana')}</Text>
+          <Text style={styles.orderDetail}>{step('banana').detail}</Text>
+          <FoodName compact name={game.foods.banana ?? ''} onSave={(name) => void game.saveFood('banana', name)} />
         </View>
         {done.has('banana') ? (
           <View style={styles.doneDot}>
             <Icon name="check" size={14} />
           </View>
         ) : (
-          <View style={styles.openDot} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="I ate the banana"
+            disabled={busy}
+            onPress={() => run(() => game.logQuest({ questKey: 'banana' }))}
+            hitSlop={12}
+            style={styles.openDot}
+          />
         )}
-      </Pressable>
+      </View>
       <Pressable
         accessibilityRole="button"
         disabled={busy || done.has('walk')}
@@ -363,8 +387,8 @@ export default function ForgeScreen() {
           <Image source={foodArt.walk} resizeMode="contain" style={styles.fill} />
         </View>
         <View style={styles.grow}>
-          <Text style={styles.orderTitle}>A short walk</Text>
-          <Text style={styles.orderDetail}>10 flow · once today</Text>
+          <Text style={styles.orderTitle}>{step('walk').title}</Text>
+          <Text style={styles.orderDetail}>{step('walk').detail}</Text>
         </View>
         {done.has('walk') ? (
           <View style={styles.doneDot}>
@@ -375,6 +399,54 @@ export default function ForgeScreen() {
         )}
       </Pressable>
     </Screen>
+  );
+}
+
+function FoodName({ name, onSave, compact }: { name: string; onSave: (name: string) => void; compact?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(name);
+
+  if (!open) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => {
+          setDraft(name);
+          setOpen(true);
+        }}
+        style={styles.foodLine}>
+        <Text style={styles.foodLineText}>
+          {compact ? (name ? 'Change' : 'Name it') : name ? `You will eat ${name}` : 'Name what you will eat'}
+        </Text>
+        {compact || !name ? null : <Text style={styles.foodLineAction}>Change</Text>}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={styles.foodEdit}>
+      <TextInput
+        value={draft}
+        onChangeText={setDraft}
+        autoFocus
+        placeholder="Dates, spinach, banana"
+        placeholderTextColor={palette.tertiary}
+        style={styles.foodInput}
+        onSubmitEditing={() => {
+          onSave(draft);
+          setOpen(false);
+        }}
+      />
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => {
+          onSave(draft);
+          setOpen(false);
+        }}
+        style={styles.foodSave}>
+        <Text style={styles.foodSaveText}>Save</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -454,6 +526,8 @@ function NextCard({
   action,
   busy,
   onAction,
+  foodName,
+  onFoodName,
 }: {
   index: number;
   art: ImageSourcePropType;
@@ -468,6 +542,8 @@ function NextCard({
   action?: string;
   busy?: boolean;
   onAction?: () => void;
+  foodName?: string;
+  onFoodName?: (name: string) => void;
 }) {
   return (
     <View style={styles.next}>
@@ -480,6 +556,7 @@ function NextCard({
       <View style={styles.nextBodyWrap}>
       <Text style={styles.nextTitle}>{title}</Text>
       <Text style={styles.nextBody}>{body}</Text>
+      {onFoodName ? <FoodName name={foodName ?? ''} onSave={onFoodName} /> : null}
       <View style={styles.chips}>
         {chips.map((chip) => (
           <View key={chip} style={[styles.chip, chip.startsWith('+') ? styles.chipOn : null]}>
@@ -636,6 +713,24 @@ const styles = StyleSheet.create({
   },
   grow: { flex: 1 },
   orderTitle: { color: palette.ink, fontFamily: font.semibold, fontSize: 16 },
+  foodLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
+  foodLineText: { color: palette.crimson, fontFamily: font.semibold, fontSize: 13, flexShrink: 1 },
+  foodLineAction: { color: palette.crimson, fontFamily: font.bold, fontSize: 13 },
+  foodEdit: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  foodInput: {
+    flex: 1,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: palette.crimson,
+    backgroundColor: palette.raised,
+    paddingHorizontal: 12,
+    color: palette.ink,
+    fontFamily: font.semibold,
+    fontSize: 15,
+  },
+  foodSave: { backgroundColor: palette.crimson, borderRadius: 999, paddingHorizontal: 14, height: 44, alignItems: 'center', justifyContent: 'center' },
+  foodSaveText: { color: '#fff', fontFamily: font.bold, fontSize: 14 },
   faint: { color: palette.tertiary },
   orderDetail: { color: palette.muted, fontFamily: font.text, fontSize: 13, marginTop: 2 },
   doneDot: {

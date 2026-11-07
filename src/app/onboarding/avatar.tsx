@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Image } from 'expo-image';
 import { Redirect, useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { openingArt } from '@/art';
 import { OnboardingBar } from '@/app/onboarding/name';
@@ -25,6 +25,7 @@ export default function AvatarScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const name = game.snap.profile?.displayName ?? 'there';
+  const insets = useSafeAreaInsets();
 
   if (!game.ready) return null;
   if (game.snap.mode === 'signed_out') return <Redirect href="/sign-in" />;
@@ -63,7 +64,7 @@ export default function AvatarScreen() {
         </View>
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
         <Button
           label="Start today"
           disabled={busy}

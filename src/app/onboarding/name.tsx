@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Image } from 'expo-image';
 import { Redirect, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { openingArt } from '@/art';
 import { Button } from '@/components/ui';
@@ -32,6 +32,7 @@ export default function NameScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const ready = validateName(name) === null;
+  const insets = useSafeAreaInsets();
 
   if (!game.ready) return null;
   if (game.snap.mode === 'signed_out') return <Redirect href="/sign-in" />;
@@ -72,7 +73,7 @@ export default function NameScreen() {
         ) : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </View>
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
         <Button
           label="Next"
           disabled={busy || !ready}

@@ -126,6 +126,14 @@ export default function SettingsScreen() {
         </>
       ) : null}
 
+      <Text style={styles.group}>ADMIN</Text>
+      <View style={styles.card}>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/admin')} style={styles.row}>
+          <Text style={styles.rowLabel}>Edit the day</Text>
+          <Icon name="chevron" size={18} />
+        </Pressable>
+      </View>
+
       <Text style={styles.group}>ACCOUNT</Text>
       <View style={styles.card}>
         <Pressable

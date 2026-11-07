@@ -4,6 +4,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { emptyStreak, emptyTree, type AvatarId, type FoodKey, type QuestKey, type VitaminFood } from '@/domain/engine';
+import { DEFAULT_PLAN, type PlanKey, type PlanStep } from '@/domain/plan';
 import {
   cancelReminders,
   ensureReminderPermission,
@@ -26,6 +27,7 @@ import {
   type ActionResult,
   type Snap,
 } from '@/lib/store';
+import { readAdminOpen, readFoods, readPlan, writeAdminOpen, writeFood, writePlan } from '@/lib/plan-store';
 import { syncAccount } from '@/lib/sync';
 
 export type Destination = '/forge' | '/onboarding/name';
@@ -58,6 +60,12 @@ type GameValue = {
   clearNotice: () => void;
   dismissCoach: () => Promise<void>;
   syncNow: () => Promise<void>;
+  plan: PlanStep[];
+  foods: Record<string, string>;
+  adminOpen: boolean;
+  savePlan: (plan: PlanStep[]) => Promise<void>;
+  saveFood: (key: PlanKey, name: string) => Promise<void>;
+  setAdminOpen: (open: boolean) => Promise<void>;
 };
 
 const signedOut: Snap = {
@@ -88,6 +96,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [online, setOnline] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [plan, setPlan] = useState<PlanStep[]>(DEFAULT_PLAN);
+  const [foods, setFoods] = useState<Record<string, string>>({});
+  const [adminOpen, setAdminOpenState] = useState(false);
   const snapRef = useRef(snap);
   const syncingRef = useRef(false);
   snapRef.current = snap;
@@ -115,8 +126,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     let alive = true;
     void (async () => {
       const next = await boot(db);
+      const [nextPlan, nextFoods, nextAdmin] = await Promise.all([readPlan(db), readFoods(db), readAdminOpen(db)]);
       if (!alive) return;
       setSnap(next);
+      setPlan(nextPlan);
+      setFoods(nextFoods);
+      setAdminOpenState(nextAdmin);
       setReady(true);
       await SplashScreen.hideAsync().catch(() => undefined);
       if (next.profile?.remindersEnabled) await rescheduleIfAllowed();
@@ -234,6 +249,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
         await dismissCoach(db);
         await refresh();
       },
+      plan,
+      foods,
+      adminOpen,
+      savePlan: async (nextPlan) => {
+        await writePlan(db, nextPlan);
+        setPlan(await readPlan(db));
+      },
+      saveFood: async (key, name) => {
+        setFoods(await writeFood(db, key, name));
+      },
+      setAdminOpen: async (open) => {
+        await writeAdminOpen(db, open);
+        setAdminOpenState(open);
+      },
       syncNow: async () => {
         if (!online) {
           setNotice('No network.');
@@ -242,7 +271,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         await runSync();
       },
     }),
-    [apply, db, notice, online, ready, refresh, runSync, snap, syncing],
+    [adminOpen, apply, db, foods, notice, online, plan, ready, refresh, runSync, snap, syncing],
   );
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

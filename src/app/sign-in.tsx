@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Image as ExpoImage } from 'expo-image';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { openingArt } from '@/art';
@@ -111,6 +111,8 @@ function Splash() {
 
 function Welcome({ busy, onStart }: { busy: boolean; onStart: () => void }) {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
   const s = width / 390;
   return (
     <SafeAreaView style={styles.welcome} edges={['top', 'left', 'right']}>
@@ -152,9 +154,12 @@ function Welcome({ busy, onStart }: { busy: boolean; onStart: () => void }) {
         </Text>
         <Text style={styles.lead}>Your picture gets stronger with every iron-rich day.</Text>
       </View>
-      <View style={styles.actions}>
+      <View style={[styles.actions, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
         <Button label="Start" disabled={busy} onPress={onStart} />
         <Text style={styles.minute}>Takes under a minute · No sign-up</Text>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/admin')}>
+          <Text style={styles.link}>Admin</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
