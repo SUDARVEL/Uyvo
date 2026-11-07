@@ -5,6 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Button, Field, Screen } from '@/components/ui';
 import { adminMatches } from '@/lib/admin-gate';
+import type { AdminAction } from '@/lib/admin-tools';
 import { appNow } from '@/lib/clock';
 import type { PlanKey, PlanStep } from '@/domain/plan';
 import { useGame } from '@/state/game';
@@ -18,13 +19,32 @@ function testDateLabel(offset: number): string {
   return `${text} · ${days} ${days === 1 ? 'day' : 'days'} ${offset > 0 ? 'ahead' : 'back'}`;
 }
 
-function ToolButton({ label, onPress, disabled }: { label: string; onPress: () => void; disabled?: boolean }) {
+const JUMPS: { label: string; action: AdminAction }[] = [
+  { label: 'Start of day', action: 'start' },
+  { label: 'After soaked fruit', action: 'fruit' },
+  { label: 'After juice', action: 'juice' },
+  { label: 'Waiting 60 minutes', action: 'wait' },
+  { label: 'Day done', action: 'done' },
+  { label: 'Week done (7 days)', action: 'week' },
+];
+
+function ToolButton({
+  label,
+  onPress,
+  disabled,
+  wide,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  wide?: boolean;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
-      style={[styles.tool, disabled ? styles.toolOff : null]}>
+      style={[styles.tool, wide ? styles.toolWide : null, disabled ? styles.toolOff : null]}>
       <Text style={styles.toolText}>{label}</Text>
     </Pressable>
   );
@@ -133,6 +153,32 @@ export default function AdminScreen() {
         </View>
         {toolNote ? <Text style={styles.saved}>{toolNote}</Text> : null}
       </View>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Jump to</Text>
+        <Text style={styles.lead}>Set this test day, then open Today to see it. Practice mode only.</Text>
+        <View style={styles.tools}>
+          {JUMPS.map((item) => (
+            <ToolButton
+              key={item.action}
+              label={item.label}
+              disabled={game.snap.mode === 'cloud'}
+              onPress={() => {
+                void game.adminAct(item.action).then((error) => setToolNote(error ?? 'Ready. Open Today to see it.'));
+              }}
+            />
+          ))}
+        </View>
+        <View style={styles.tools}>
+          <ToolButton
+            wide
+            label="Reset test day"
+            disabled={game.snap.mode === 'cloud'}
+            onPress={() => {
+              void game.adminAct('reset').then((error) => setToolNote(error ?? 'This test day is empty again.'));
+            }}
+          />
+        </View>
+      </View>
       <Text style={styles.title}>Edit the day</Text>
       <Text style={styles.lead}>Change a name or the words. The iron and flow numbers stay the same. People rename their own foods in Settings.</Text>
       {draft.map((step) => (
@@ -210,6 +256,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  toolWide: { flexBasis: '100%' },
   toolOff: { opacity: 0.4 },
   toolText: { color: '#FFFFFF', fontFamily: font.bold, fontSize: 15 },
   saved: { color: palette.leaf, fontFamily: font.semibold, fontSize: 14 },

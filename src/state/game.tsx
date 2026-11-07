@@ -11,15 +11,18 @@ import {
   rescheduleIfAllowed,
   scheduleReminders,
 } from '@/lib/notifications';
+import { finishDay, jumpTo, skipStep, type AdminAction } from '@/lib/admin-tools';
 import { getDayOffset, setDayOffset } from '@/lib/clock';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { boot, signIn as signInAccount, signOut as signOutAccount, signUp as signUpAccount, startPractice } from '@/lib/session';
 import {
+  adminClearDay,
+  adminDropFutureTeas,
+  adminReplayToToday,
   drinkTea,
   endWaitNow,
   logQuest,
   readSnap,
-  reconcile,
   undoQuest,
   type UndoableQuest,
   removeLastWater,
@@ -76,6 +79,7 @@ type GameValue = {
   undoQuest: (questKey: UndoableQuest) => Promise<string | null>;
   dayOffset: number;
   moveDay: (days: number | 'today') => Promise<void>;
+  adminAct: (action: AdminAction) => Promise<string | null>;
   endWait: () => Promise<string | null>;
   clearNotice: () => void;
   dismissCoach: () => Promise<void>;
@@ -226,6 +230,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
     [refresh, runSync],
   );
 
+  const orderRef = useRef(order);
+  orderRef.current = order;
+
+  const moveDay = useCallback(
+    async (days: number | 'today') => {
+      const next = days === 'today' ? 0 : getDayOffset() + days;
+      setDayOffset(next);
+      await writeDayOffset(db, next);
+      setDayOffsetState(next);
+      await adminDropFutureTeas(db);
+      await adminReplayToToday(db);
+      await refresh();
+    },
+    [db, refresh],
+  );
+
   const value = useMemo<GameValue>(
     () => ({
       ready,
@@ -256,6 +276,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         await signOutAccount(db);
         setDayOffset(0);
         setDayOffsetState(0);
+        setAdminOpenState(false);
         setNotice(null);
         await refresh();
       },
@@ -281,13 +302,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
       removeWater: async () => apply(await removeLastWater(db)),
       undoQuest: async (questKey) => apply(await undoQuest(db, questKey)),
       dayOffset,
-      moveDay: async (days) => {
-        const next = days === 'today' ? 0 : getDayOffset() + days;
-        setDayOffset(next);
-        await writeDayOffset(db, next);
-        setDayOffsetState(next);
-        await reconcile(db);
-        await refresh();
+      moveDay,
+      adminAct: async (action) => {
+        if (!adminOpen) return 'Admin only.';
+        const order = orderRef.current;
+        let result: ActionResult = { error: null, message: null };
+        if (action === 'skip') result = await skipStep(db, order);
+        else if (action === 'finish') {
+          const celebration = await finishDay(db, order);
+          await moveDay(1);
+          result = { error: null, message: celebration ?? 'Day finished. Moved one day on.' };
+        } else if (action === 'reset') result = await adminClearDay(db);
+        else result = await jumpTo(db, action, order);
+        return apply(result);
       },
       endWait: async () => apply(await endWaitNow(db)),
       clearNotice: () => setNotice(null),
@@ -321,7 +348,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         await runSync();
       },
     }),
-    [adminOpen, apply, dayOffset, db, foods, notice, online, order, plan, ready, refresh, runSync, snap, syncing],
+    [adminOpen, apply, dayOffset, db, foods, moveDay, notice, online, order, plan, ready, refresh, runSync, snap, syncing],
   );
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

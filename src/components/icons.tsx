@@ -4,6 +4,7 @@ import { Pressable } from 'react-native';
 const files = {
   back: require('../../assets/figma/icon-back.svg'),
   check: require('../../assets/figma/icon-check.svg'),
+  cup: require('../../assets/figma/icon-cup.svg'),
   chevron: require('../../assets/figma/icon-chevron.svg'),
   droplet: require('../../assets/figma/icon-droplet.svg'),
   heart: require('../../assets/figma/icon-heart.svg'),

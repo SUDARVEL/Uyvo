@@ -729,6 +729,107 @@ export function removeLastWater(db: SQLiteDatabase): Promise<ActionResult> {
   });
 }
 
+async function rebuildProgress(db: SQLiteDatabase, userId: string, through: string | null = null): Promise<void> {
+  const logs = await readLogs(db, userId);
+  const iron = logs.reduce((sum, entry) => sum + entry.ironShardsAwarded, 0);
+  const flow = logs.reduce((sum, entry) => sum + entry.flowPointsAwarded, 0);
+  await db.runAsync('update wallets set iron_shards = ?, flow_points = ? where user_id = ?', iron, flow, userId);
+  let streak = emptyStreak();
+  let tree = emptyTree();
+  const badges: Badge[] = [];
+  const dates = [...new Set(logs.map((entry) => entry.localDate))].filter((day) => !through || day <= through).sort();
+  const run = (day: string) => {
+    const next = evaluateProgress({
+      logs,
+      streak,
+      badges: badges.map((badge) => badge.badgeKey),
+      tree,
+      today: day,
+    });
+    streak = next.streak;
+    tree = next.tree;
+    badges.push(...next.newBadges);
+  };
+  for (const day of dates) run(day);
+  const today = localDate(appNow());
+  if (dates.length === 0 || today > dates[dates.length - 1]) run(today);
+  await db.runAsync(
+    `insert into streaks (user_id, current_streak, longest_streak, last_success_date) values (?, ?, ?, ?)
+     on conflict(user_id) do update set
+       current_streak = excluded.current_streak,
+       longest_streak = excluded.longest_streak,
+       last_success_date = excluded.last_success_date`,
+    userId,
+    streak.currentStreak,
+    streak.longestStreak,
+    streak.lastSuccessDate,
+  );
+  await db.runAsync(
+    `insert into tree_state (user_id, weeks_completed, fruit_count) values (?, ?, ?)
+     on conflict(user_id) do update set weeks_completed = excluded.weeks_completed, fruit_count = excluded.fruit_count`,
+    userId,
+    tree.weeksCompleted,
+    tree.fruitCount,
+  );
+  await db.runAsync('delete from badges where user_id = ?', userId);
+  for (const badge of badges) {
+    await db.runAsync('insert into badges (user_id, badge_key, earned_on) values (?, ?, ?)', userId, badge.badgeKey, badge.earnedOn);
+  }
+}
+
+const PRACTICE_ONLY = 'This test tool works in practice mode only.';
+
+export function adminReplayToToday(db: SQLiteDatabase): Promise<void> {
+  return transaction(db, async () => {
+    const userId = await meta(db, 'active_user_id');
+    const mode = await meta(db, 'account_mode');
+    if (!userId) return;
+    const today = localDate(appNow());
+    if (mode === 'cloud') await applyProgress(db, userId, mode, today);
+    else await rebuildProgress(db, userId, today);
+  });
+}
+
+export function adminClearDay(db: SQLiteDatabase): Promise<ActionResult> {
+  return transaction(db, async () => {
+    const userId = await meta(db, 'active_user_id');
+    const mode = await meta(db, 'account_mode');
+    if (!userId) return { error: 'Sign in first.', message: null };
+    if (mode === 'cloud') return { error: PRACTICE_ONLY, message: null };
+    const today = localDate(appNow());
+    await db.runAsync('delete from quest_logs where user_id = ? and local_date = ?', userId, today);
+    await db.runAsync('delete from tea_windows where user_id = ? and local_date = ?', userId, today);
+    await rebuildProgress(db, userId);
+    return { error: null, message: 'This test day is empty again.' };
+  });
+}
+
+export function adminClearAll(db: SQLiteDatabase): Promise<ActionResult> {
+  return transaction(db, async () => {
+    const userId = await meta(db, 'active_user_id');
+    const mode = await meta(db, 'account_mode');
+    if (!userId) return { error: 'Sign in first.', message: null };
+    if (mode === 'cloud') return { error: PRACTICE_ONLY, message: null };
+    await db.runAsync('delete from quest_logs where user_id = ?', userId);
+    await db.runAsync('delete from tea_windows where user_id = ?', userId);
+    await rebuildProgress(db, userId);
+    return { error: null, message: null };
+  });
+}
+
+export function adminDropFutureTeas(db: SQLiteDatabase): Promise<void> {
+  return transaction(db, async () => {
+    const userId = await meta(db, 'active_user_id');
+    const mode = await meta(db, 'account_mode');
+    if (!userId || mode === 'cloud') return;
+    await db.runAsync(
+      "delete from tea_windows where user_id = ? and status = 'active' and started_at > ?",
+      userId,
+      appNow().toISOString(),
+    );
+  });
+}
+
 export const UNDOABLE_QUESTS = ['banana', 'walk'] as const;
 export type UndoableQuest = (typeof UNDOABLE_QUESTS)[number];
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import { useRouter } from 'expo-router';
+import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { foodArt, heroArt, treeArt } from '@/art';
 import { Coach } from '@/components/coach';
@@ -105,6 +106,7 @@ function OrderRow({
 
 export default function ForgeScreen() {
   const game = useGame();
+  const router = useRouter();
   const [, setTick] = useState(0);
   const now = appNow().getTime();
   const [lemon, setLemon] = useState(false);
@@ -146,6 +148,16 @@ export default function ForgeScreen() {
   const firstOpen = order.find((key) => !done.has(key)) ?? null;
   const waited = tea?.status === 'survived' || done.has('digest_survive');
   const drank = tea?.status === 'drank';
+  const dayDone = waited && game.snap.streak.lastSuccessDate === today;
+  const badge: HeroBadge | null = drank
+    ? { text: 'Blood food paused', icon: 'cup', tea: true }
+    : state === 'glowing'
+      ? { text: 'Full day', icon: 'sun' }
+      : done.has('lunch_greens')
+        ? { text: 'Green lunch done', icon: 'sun' }
+        : todayLogs.length === 0
+          ? { text: 'Starts empty each morning', icon: 'sun' }
+          : null;
   const doneCount = order.filter((key) => done.has(key)).length + (waited || drank ? 1 : 0) + (waited ? 1 : 0);
 
   const showCoach = Boolean(profile?.onboardedAt) && !game.snap.coachSeen;
@@ -190,37 +202,28 @@ export default function ForgeScreen() {
           <Text style={styles.streakText}>{streak} {streak === 1 ? 'day' : 'days'} in a row</Text>
         </View>
       </View>
+      {game.adminOpen ? (
+        <AdminBar
+          date={new Date(now).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).replace(',', '')}
+          busy={busy}
+          onSkip={() => run(() => game.adminAct('skip'))}
+          onFinish={() => run(() => game.adminAct('finish'))}
+          onNext={() => run(() => game.moveDay(1).then(() => null))}
+          onBack={() => run(() => game.moveDay(-1).then(() => null))}
+          onPage={() => router.push('/admin')}
+        />
+      ) : null}
       {game.snap.mode === 'cloud' && !game.online ? <Banner>No network.</Banner> : null}
       {hint ? <Banner tone="crimson">{hint}</Banner> : null}
 
-      <View style={styles.card}>
-        <View style={styles.portraitWrap}>
-          <Image source={heroArt[avatar][state]} style={styles.portrait} resizeMode="contain" />
-          <View style={styles.badge}>
-            <Icon name="sun" size={14} />
-            <Text style={styles.badgeText}>Starts empty each morning</Text>
-          </View>
-        </View>
-        <View style={styles.meterHead}>
-          <Text style={styles.meterLabel}>{HERO_LABEL[state]}</Text>
-          <Text style={styles.meterCount}>{FILL[state]} of 4</Text>
-        </View>
-        <View style={styles.bars}>
-          {[0, 1, 2, 3].map((index) => (
-            <View key={index} style={[styles.bar, index < FILL[state] ? styles.barOn : null]} />
-          ))}
-        </View>
-        <View style={styles.pills}>
-          <View style={[styles.stat, styles.ironPill]}>
-            <Icon name="heart" size={16} />
-            <Text style={styles.ironText}>{todayIron} iron</Text>
-          </View>
-          <View style={[styles.stat, styles.flowPill]}>
-            <Icon name="droplet" size={16} />
-            <Text style={styles.flowText}>{todayFlow} flow</Text>
-          </View>
-        </View>
-      </View>
+      <HeroCard
+        art={heroArt[avatar][state]}
+        badge={badge}
+        label={HERO_LABEL[state]}
+        fill={FILL[state]}
+        iron={todayIron}
+        flow={todayFlow}
+      />
 
       <View>
         {firstOpen ? (
@@ -266,6 +269,8 @@ export default function ForgeScreen() {
             body={teaSeconds > 0 ? `${clockLabel(teaSeconds)} left. No blood food until then.` : 'No blood food until the clock ends.'}
             chips={[{ label: 'Paused', tone: 'neutral' }]}
           />
+        ) : dayDone ? (
+          <DayDoneCard days={streak > 0 ? streak : 7} onDays={() => router.push('/vein-train')} />
         ) : (
           <NextCard
             index={5}
@@ -358,6 +363,142 @@ export default function ForgeScreen() {
         onToggle={() => run(() => (done.has('walk') ? game.undoQuest('walk') : game.logQuest({ questKey: 'walk' })))}
       />
     </Screen>
+  );
+}
+
+function DayDoneCard({ days, onDays }: { days: number; onDays: () => void }) {
+  return (
+    <View style={styles.nextShadow}>
+      <View style={styles.dayDone}>
+        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
+          <Defs>
+            <LinearGradient id="dayDoneGradient" x1="-0.04" y1="0.04" x2="1.04" y2="0.96">
+              <Stop offset="0" stopColor="#BF2942" />
+              <Stop offset="0.714" stopColor="#73122B" />
+              <Stop offset="1" stopColor="#73122B" />
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#dayDoneGradient)" />
+        </Svg>
+        <View style={styles.dayDoneTag}>
+          <Text style={styles.dayDoneTagText}>FULL DAY · +1</Text>
+        </View>
+        <Text style={styles.dayDoneNumber}>{days}</Text>
+        <Text style={styles.dayDoneUnit}>{days === 1 ? 'day in a row' : 'days in a row'}</Text>
+        <Text style={styles.dayDoneBody}>
+          Three foods and the wait, all done. Tomorrow starts empty again. Your days stay.
+        </Text>
+        <Pressable accessibilityRole="button" onPress={onDays} style={styles.dayDoneButton}>
+          <Text style={styles.dayDoneButtonText}>See my days</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+type HeroBadge = { text: string; icon: 'sun' | 'cup'; tea?: boolean };
+
+function HeroCard({
+  art,
+  badge,
+  label,
+  fill,
+  iron,
+  flow,
+}: {
+  art: ImageSourcePropType;
+  badge: HeroBadge | null;
+  label: string;
+  fill: number;
+  iron: number;
+  flow: number;
+}) {
+  return (
+    <View style={styles.heroShadow}>
+      <View style={styles.hero}>
+        <View style={styles.band}>
+          <View style={styles.bandArt}>
+            <Image source={art} resizeMode="contain" style={styles.bandPicture} />
+          </View>
+          {badge ? (
+            <View style={styles.badge}>
+              <Icon name={badge.icon} size={14} />
+              <Text style={[styles.badgeText, badge.tea ? styles.badgeTea : null]}>{badge.text}</Text>
+            </View>
+          ) : null}
+        </View>
+        <View style={styles.meterBlock}>
+          <View style={styles.meter}>
+            <View style={styles.meterHead}>
+              <Text style={styles.meterLabel}>{label}</Text>
+              <Text style={styles.meterCount}>{fill} of 4</Text>
+            </View>
+            <View style={styles.bars}>
+              {[0, 1, 2, 3].map((index) => (
+                <View key={index} style={[styles.bar, index < fill ? styles.barOn : null]} />
+              ))}
+            </View>
+          </View>
+          <View style={styles.pills}>
+            <View style={[styles.stat, styles.ironPill]}>
+              <Icon name="heart" size={16} />
+              <Text style={styles.ironText}>{iron}</Text>
+              <Text style={styles.ironUnit}>iron</Text>
+            </View>
+            <View style={[styles.stat, styles.flowPill]}>
+              <Icon name="droplet" size={16} />
+              <Text style={styles.flowText}>{flow}</Text>
+              <Text style={styles.flowUnit}>flow</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function AdminBar({
+  date,
+  busy,
+  onSkip,
+  onFinish,
+  onNext,
+  onBack,
+  onPage,
+}: {
+  date: string;
+  busy: boolean;
+  onSkip: () => void;
+  onFinish: () => void;
+  onNext: () => void;
+  onBack: () => void;
+  onPage: () => void;
+}) {
+  const buttons: { label: string; onPress: () => void; main?: boolean }[] = [
+    { label: 'Skip step', onPress: onSkip, main: true },
+    { label: 'Finish day and next', onPress: onFinish, main: true },
+    { label: 'Next day', onPress: onNext },
+    { label: 'Back a day', onPress: onBack },
+    { label: 'Admin page', onPress: onPage },
+  ];
+  return (
+    <View style={styles.adminBar}>
+      <Text style={styles.adminTitle}>
+        Admin · Test day <Text style={styles.adminDate}>{date}</Text>
+      </Text>
+      <View style={styles.adminButtons}>
+        {buttons.map((item) => (
+          <Pressable
+            key={item.label}
+            accessibilityRole="button"
+            disabled={busy}
+            onPress={item.onPress}
+            style={[styles.adminButton, item.main ? styles.adminMain : null, busy ? styles.roundOff : null]}>
+            <Text style={[styles.adminButtonText, item.main ? styles.adminMainText : null]}>{item.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -536,6 +677,30 @@ const chipTone = {
 } as const;
 
 const styles = StyleSheet.create({
+  adminBar: { backgroundColor: palette.amberSoft, borderRadius: 18, padding: 12, gap: 10 },
+  adminTitle: { color: palette.orange, fontFamily: font.bold, fontSize: 12, letterSpacing: 0.4 },
+  adminDate: { color: palette.ink },
+  adminButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  adminButton: { backgroundColor: palette.raised, borderRadius: 999, paddingHorizontal: 12, height: 34, alignItems: 'center', justifyContent: 'center' },
+  adminMain: { backgroundColor: palette.crimson },
+  adminButtonText: { color: palette.ink, fontFamily: font.bold, fontSize: 13 },
+  adminMainText: { color: '#FFFFFF' },
+  dayDone: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    alignItems: 'center',
+    gap: 16,
+    paddingTop: 24,
+    paddingBottom: 22,
+    paddingHorizontal: 22,
+  },
+  dayDoneTag: { backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  dayDoneTagText: { color: '#FFFFFF', fontFamily: font.extra, fontSize: 11, lineHeight: 14, letterSpacing: 1.2 },
+  dayDoneNumber: { color: '#FFFFFF', fontFamily: font.display, fontSize: 88, lineHeight: 88, letterSpacing: -4 },
+  dayDoneUnit: { color: '#FFFFFF', fontFamily: font.italic, fontSize: 18, lineHeight: 26 },
+  dayDoneBody: { color: 'rgba(255,255,255,0.85)', fontFamily: font.text, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  dayDoneButton: { alignSelf: 'stretch', height: 56, borderRadius: 999, backgroundColor: palette.raised, alignItems: 'center', justifyContent: 'center' },
+  dayDoneButtonText: { color: palette.ink, fontFamily: font.bold, fontSize: 16 },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   testChip: { backgroundColor: palette.amberSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   testChipText: { color: palette.orange, fontFamily: font.bold, fontSize: 11 },
@@ -544,9 +709,18 @@ const styles = StyleSheet.create({
   hello: { color: palette.ink, fontFamily: font.display, fontSize: 32, flexShrink: 1 },
   streakChip: { backgroundColor: palette.leafSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
   streakText: { color: palette.leaf, fontFamily: font.bold, fontSize: 12 },
-  card: { backgroundColor: palette.raised, borderRadius: 24, padding: 14, gap: 12 },
-  portraitWrap: { borderRadius: 20, overflow: 'hidden', backgroundColor: palette.bg, height: 236, alignItems: 'center', justifyContent: 'flex-end' },
-  portrait: { width: 228, height: 228 },
+  heroShadow: {
+    borderRadius: 28,
+    backgroundColor: palette.raised,
+    shadowColor: '#5C331F',
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 10 },
+  },
+  hero: { borderRadius: 28, overflow: 'hidden', backgroundColor: palette.raised },
+  band: { height: 236, backgroundColor: palette.sunken, overflow: 'hidden' },
+  bandArt: { position: 'absolute', left: 0, right: 0, top: 44, alignItems: 'center' },
+  bandPicture: { width: 228, height: 228 },
   badge: {
     position: 'absolute',
     left: 14,
@@ -556,22 +730,28 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: palette.raised,
     borderRadius: 999,
-    paddingHorizontal: 10,
+    paddingLeft: 10,
+    paddingRight: 12,
     paddingVertical: 6,
   },
-  badgeText: { color: palette.ink, fontFamily: font.semibold, fontSize: 12 },
-  meterHead: { flexDirection: 'row', justifyContent: 'space-between' },
-  meterLabel: { color: palette.ink, fontFamily: font.bold, fontSize: 16 },
-  meterCount: { color: palette.muted, fontFamily: font.semibold, fontSize: 14 },
+  badgeText: { color: palette.crimson, fontFamily: font.semibold, fontSize: 12, lineHeight: 16 },
+  badgeTea: { color: '#7A4B25' },
+  meterBlock: { paddingTop: 16, paddingBottom: 18, paddingHorizontal: 20, gap: 14 },
+  meter: { gap: 10 },
+  meterHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  meterLabel: { color: palette.ink, fontFamily: font.display, fontSize: 24, lineHeight: 30, letterSpacing: -0.4 },
+  meterCount: { color: palette.tertiary, fontFamily: font.semibold, fontSize: 12, lineHeight: 16 },
   bars: { flexDirection: 'row', gap: 6 },
   bar: { flex: 1, height: 8, borderRadius: 4, backgroundColor: palette.sunken },
   barOn: { backgroundColor: palette.crimson },
   pills: { flexDirection: 'row', gap: 8 },
-  stat: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
+  stat: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingLeft: 10, paddingRight: 14, paddingVertical: 7 },
   ironPill: { backgroundColor: palette.blush },
   flowPill: { backgroundColor: palette.leafSoft },
-  ironText: { color: palette.crimson, fontFamily: font.bold, fontSize: 14 },
-  flowText: { color: palette.leaf, fontFamily: font.bold, fontSize: 14 },
+  ironText: { color: palette.crimson, fontFamily: font.bold, fontSize: 16, lineHeight: 22, letterSpacing: -0.1 },
+  ironUnit: { color: palette.crimson, fontFamily: font.text, fontSize: 13, lineHeight: 18 },
+  flowText: { color: palette.leaf, fontFamily: font.bold, fontSize: 16, lineHeight: 22, letterSpacing: -0.1 },
+  flowUnit: { color: palette.leaf, fontFamily: font.text, fontSize: 13, lineHeight: 18 },
   wait: {
     backgroundColor: palette.raised,
     borderRadius: 28,
