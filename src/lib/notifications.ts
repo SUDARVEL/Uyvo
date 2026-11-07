@@ -80,6 +80,31 @@ export async function rescheduleIfAllowed(): Promise<void> {
   await scheduleReminders();
 }
 
+export async function notifyUpdateReady(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  const Notifications = await prepare();
+  await Notifications.setNotificationChannelAsync('updates', {
+    name: 'App updates',
+    importance: Notifications.AndroidImportance.DEFAULT,
+  });
+  const current = await Notifications.getPermissionsAsync();
+  const granted = current.granted || (await Notifications.requestPermissionsAsync()).granted;
+  if (!granted) return;
+  await Notifications.scheduleNotificationAsync({
+    identifier: 'uyvo-update',
+    content: {
+      title: 'Uyvo has something new',
+      body: 'Open the app to see it.',
+      data: { kind: 'update' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 1,
+      channelId: 'updates',
+    },
+  });
+}
+
 export async function listenForForgeOpens(onOpen: () => void): Promise<() => void> {
   if (Platform.OS === 'web') return () => undefined;
   const Notifications = await notifications();

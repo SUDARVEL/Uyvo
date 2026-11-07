@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 
 import { foodArt, heroArt, treeArt } from '@/art';
 import { Coach } from '@/components/coach';
@@ -139,6 +140,7 @@ export default function ForgeScreen() {
         showCoach ? (
           <Coach
             step={coachStep}
+            onSkip={() => void game.dismissCoach()}
             onNext={() => {
               if (coachStep >= 1) void game.dismissCoach();
               else setCoachStep(1);
@@ -185,13 +187,13 @@ export default function ForgeScreen() {
         </View>
       </View>
 
-      <View style={styles.card}>
+      <View>
         {current === 0 ? (
           <NextCard
             index={1}
             art={foodArt.morning_shot}
             title="Drink the soaked dry fruit"
-            body="Dates and raisins, soaked overnight. Drink it first."
+            body="Dates and raisins soaked overnight. Drink the water, eat the fruit."
             chips={lemon ? ['+20 iron', 'Morning'] : ['+10 iron', 'Morning']}
             lemon={lemon}
             onLemon={setLemon}
@@ -242,15 +244,11 @@ export default function ForgeScreen() {
             onAction={() => run(() => game.startDigest())}
           />
         ) : tea?.status === 'active' ? (
-          <NextCard
-            index={4}
-            art={foodArt.tea}
-            title="Don't drink tea"
-            body={`${clockLabel(teaSeconds)} left. Water, banana, and a walk are fine.`}
-            chips={['60 min', 'Water is fine']}
-            action="I drank tea"
+          <WaitCard
+            seconds={teaSeconds}
+            endsAt={tea.endsAt}
             busy={busy}
-            onAction={() => run(() => game.drinkTea())}
+            onTea={() => run(() => game.drinkTea())}
           />
         ) : drank ? (
           <NextCard
@@ -380,6 +378,68 @@ export default function ForgeScreen() {
   );
 }
 
+function WaitCard({
+  seconds,
+  endsAt,
+  busy,
+  onTea,
+}: {
+  seconds: number;
+  endsAt: string;
+  busy?: boolean;
+  onTea: () => void;
+}) {
+  const size = 232;
+  const stroke = 16;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const elapsed = 1 - seconds / 3600;
+  const ends = new Date(endsAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return (
+    <View style={styles.wait}>
+      <View style={styles.waitTag}>
+        <Text style={styles.stepTagText}>NOW · 4 OF 5</Text>
+      </View>
+      <View style={styles.ring}>
+        <Svg width={size} height={size}>
+          <Circle cx={size / 2} cy={size / 2} r={radius} stroke="#F3E6D8" strokeWidth={stroke} fill="none" />
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={palette.crimson}
+            strokeWidth={stroke}
+            fill="none"
+            strokeDasharray={`${Math.max(0.02, elapsed) * circumference} ${circumference}`}
+            strokeLinecap="round"
+            rotation="-90"
+            origin={`${size / 2}, ${size / 2}`}
+          />
+        </Svg>
+        <View style={styles.ringCenter}>
+          <Text style={styles.ringTime}>{clockLabel(seconds)}</Text>
+          <Text style={styles.ringCaption}>left · ends {ends}</Text>
+        </View>
+      </View>
+      <Text style={styles.waitTitle}>Let the iron sink in</Text>
+      <Text style={styles.waitBody}>Tea stops iron from working. Wait 60 minutes and earn +5 iron.</Text>
+      <View style={styles.chips}>
+        {['✓ Water', '✓ Banana', '✓ Walk'].map((label) => (
+          <View key={label} style={styles.leafChip}>
+            <Text style={styles.leafChipText}>{label}</Text>
+          </View>
+        ))}
+        <View style={styles.teaChip}>
+          <Text style={styles.teaChipText}>✕ Tea</Text>
+        </View>
+      </View>
+      <Pressable accessibilityRole="button" disabled={busy} onPress={onTea} style={styles.teaButton}>
+        <Text style={styles.teaButtonText}>I drank tea</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 function NextCard({
   index,
   art,
@@ -412,15 +472,18 @@ function NextCard({
   return (
     <View style={styles.next}>
       <View style={styles.heroFoodBox}>
-        <Image source={art} resizeMode="contain" style={styles.fill} />
+        <Image source={art} resizeMode="contain" style={styles.heroFood} />
+        <View style={styles.stepTag}>
+          <Text style={styles.stepTagText}>NEXT · {index} OF 5</Text>
+        </View>
       </View>
-      <Text style={styles.nextKicker}>NEXT · {index} OF 5</Text>
+      <View style={styles.nextBodyWrap}>
       <Text style={styles.nextTitle}>{title}</Text>
       <Text style={styles.nextBody}>{body}</Text>
       <View style={styles.chips}>
         {chips.map((chip) => (
-          <View key={chip} style={styles.chip}>
-            <Text style={styles.chipText}>{chip}</Text>
+          <View key={chip} style={[styles.chip, chip.startsWith('+') ? styles.chipOn : null]}>
+            <Text style={[styles.chipText, chip.startsWith('+') ? styles.chipTextOn : null]}>{chip}</Text>
           </View>
         ))}
       </View>
@@ -446,6 +509,7 @@ function NextCard({
         </View>
       ) : null}
       {action && onAction ? <Button label={action} disabled={busy} onPress={onAction} /> : null}
+      </View>
     </View>
   );
 }
@@ -457,12 +521,12 @@ const styles = StyleSheet.create({
   streakChip: { backgroundColor: palette.leafSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
   streakText: { color: palette.leaf, fontFamily: font.bold, fontSize: 12 },
   card: { backgroundColor: palette.raised, borderRadius: 24, padding: 14, gap: 12 },
-  portraitWrap: { borderRadius: 20, overflow: 'hidden', backgroundColor: palette.bg, height: 300 },
-  portrait: { width: '100%', height: 300 },
+  portraitWrap: { borderRadius: 20, overflow: 'hidden', backgroundColor: palette.bg, height: 236, alignItems: 'center', justifyContent: 'flex-end' },
+  portrait: { width: 228, height: 228 },
   badge: {
     position: 'absolute',
-    left: 12,
-    bottom: 12,
+    left: 14,
+    top: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -484,14 +548,54 @@ const styles = StyleSheet.create({
   flowPill: { backgroundColor: palette.leafSoft },
   ironText: { color: palette.crimson, fontFamily: font.bold, fontSize: 14 },
   flowText: { color: palette.leaf, fontFamily: font.bold, fontSize: 14 },
-  next: { gap: 10 },
-  heroFoodBox: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: 18,
-    overflow: 'hidden',
-    backgroundColor: palette.bg,
+  wait: {
+    backgroundColor: palette.raised,
+    borderRadius: 28,
+    alignItems: 'center',
+    paddingTop: 24,
+    paddingBottom: 22,
+    paddingHorizontal: 22,
+    gap: 16,
   },
+  waitTag: { backgroundColor: palette.blush, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  ring: { width: 232, height: 232, alignItems: 'center', justifyContent: 'center' },
+  ringCenter: { position: 'absolute', alignItems: 'center' },
+  ringTime: { color: palette.ink, fontFamily: font.display, fontSize: 44, lineHeight: 48, letterSpacing: -0.6 },
+  ringCaption: { color: palette.muted, fontFamily: font.text, fontSize: 13 },
+  waitTitle: { color: palette.ink, fontFamily: font.display, fontSize: 24, lineHeight: 30, letterSpacing: -0.4 },
+  waitBody: { color: palette.muted, fontFamily: font.text, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  leafChip: { backgroundColor: palette.leafSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  leafChipText: { color: palette.leaf, fontFamily: font.semibold, fontSize: 12 },
+  teaChip: { backgroundColor: '#F2E4D6', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  teaChipText: { color: '#7A4B25', fontFamily: font.semibold, fontSize: 12 },
+  teaButton: {
+    alignSelf: 'stretch',
+    height: 56,
+    borderRadius: 999,
+    backgroundColor: '#F2E4D6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  teaButtonText: { color: '#7A4B25', fontFamily: font.bold, fontSize: 16 },
+  next: { borderRadius: 28, overflow: 'hidden', backgroundColor: palette.raised },
+  heroFoodBox: {
+    height: 184,
+    backgroundColor: palette.blush,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroFood: { width: 160, height: 160 },
+  stepTag: {
+    position: 'absolute',
+    left: 16,
+    top: 16,
+    backgroundColor: palette.raised,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  stepTagText: { color: palette.crimson, fontFamily: font.extra, fontSize: 11, letterSpacing: 1.2 },
+  nextBodyWrap: { padding: 20, gap: 14 },
   fill: { width: '100%', height: '100%' },
   nextKicker: { color: palette.crimson, fontFamily: font.bold, fontSize: 12, letterSpacing: 1.2 },
   nextTitle: { color: palette.ink, fontFamily: font.display, fontSize: 26, lineHeight: 32 },

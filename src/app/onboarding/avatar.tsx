@@ -1,14 +1,22 @@
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Redirect, useRouter } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { heroArt } from '@/art';
-import { Banner, Button, Screen } from '@/components/ui';
-import { Icon } from '@/components/icons';
-import { PERSON_LABEL } from '@/domain/copy';
-import { AVATARS, type AvatarId } from '@/domain/engine';
+import { openingArt } from '@/art';
+import { OnboardingBar } from '@/app/onboarding/name';
+import { Button } from '@/components/ui';
+import type { AvatarId } from '@/domain/engine';
 import { useGame } from '@/state/game';
 import { font, palette } from '@/theme';
+
+const growth = [
+  { label: 'Low', art: openingArt.womanLow, bg: palette.sunken, on: true },
+  { label: 'Tired', art: openingArt.womanTired, bg: palette.sunken, on: false },
+  { label: 'Strong', art: openingArt.womanStrong, bg: palette.blush, on: false },
+  { label: 'Full', art: openingArt.womanFull, bg: palette.amberSoft, on: false },
+] as const;
 
 export default function AvatarScreen() {
   const game = useGame();
@@ -23,94 +31,150 @@ export default function AvatarScreen() {
   if (game.snap.profile?.onboardedAt) return <Redirect href="/forge" />;
 
   return (
-    <Screen>
-      <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
-          <Icon name="back" size={22} />
-        </Pressable>
-        <View style={styles.dots}>
-          <View style={styles.dot} />
-          <View style={[styles.dot, styles.dotOn]} />
-          <View style={styles.dot} />
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <OnboardingBar step={2} onBack={() => router.back()} />
+        <Text style={styles.title}>
+          Hi <Text style={styles.name}>{name}</Text>,{'\n'}pick your picture.
+        </Text>
+        <Text style={styles.sub}>Both start at Low. Food makes them stronger.</Text>
+        <View style={styles.cards}>
+          <Picture label="Woman" art={openingArt.womanLow} selected={avatar === 'woman'} warm onPress={() => setAvatar('woman')} />
+          <Picture label="Man" art={openingArt.manLow} selected={avatar === 'man'} onPress={() => setAvatar('man')} />
         </View>
-        <View style={styles.spacer} />
-      </View>
-      <Text style={styles.title}>Hi {name}.{'\n'}Pick your picture.</Text>
-      <Text style={styles.sub}>Both start at Low. Food makes them stronger.</Text>
-      {error ? <Banner tone="crimson">{error}</Banner> : null}
-      <View style={styles.row}>
-        {AVATARS.map((choice) => {
-          const selected = avatar === choice;
-          return (
-            <Pressable
-              key={choice}
-              accessibilityRole="button"
-              onPress={() => setAvatar(choice)}
-              style={[styles.choice, selected ? styles.choiceOn : null]}>
-              <Image source={heroArt[choice].pale} style={[styles.preview, selected ? styles.previewOn : null]} resizeMode="cover" />
-              <View style={styles.choiceFoot}>
-                <Text style={styles.label}>{PERSON_LABEL[choice]}</Text>
-                {selected ? <Icon name="radio" size={22} /> : <View style={styles.radio} />}
+        <View style={styles.grows}>
+          <View style={styles.growHead}>
+            <Text style={styles.growKicker}>HOW YOUR PICTURE GROWS</Text>
+            <Text style={styles.growMeta}>in one day</Text>
+          </View>
+          <View style={styles.growRow}>
+            {growth.map((item, index) => (
+              <View key={item.label} style={styles.growItem}>
+                <View style={styles.step}>
+                  <View style={[styles.bubble, { backgroundColor: item.bg }, item.on ? styles.bubbleOn : null]}>
+                    <Image source={item.art} style={styles.bubbleArt} contentFit="contain" />
+                  </View>
+                  <Text style={[styles.bubbleLabel, item.on ? styles.bubbleLabelOn : null]}>{item.label}</Text>
+                </View>
+                {index < growth.length - 1 ? <Image source={openingArt.chevron} style={styles.chevron} contentFit="contain" /> : null}
               </View>
-            </Pressable>
-          );
-        })}
-      </View>
-      <View style={styles.note}>
-        <View style={styles.chip}>
-          <Text style={styles.chipText}>Low</Text>
+            ))}
+          </View>
         </View>
-        <Text style={styles.noteText}>is where everyone begins</Text>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+      </ScrollView>
+      <View style={styles.footer}>
+        <Button
+          label="Start today"
+          disabled={busy}
+          onPress={() => {
+            setBusy(true);
+            void game.saveAvatar(avatar).then((saveError) => {
+              setBusy(false);
+              if (saveError) setError(saveError);
+              else router.replace('/forge');
+            });
+          }}
+        />
       </View>
-      <Button
-        label="Start today"
-        disabled={busy}
-        onPress={() => {
-          setBusy(true);
-          void game.saveAvatar(avatar).then((saveError) => {
-            setBusy(false);
-            if (saveError) setError(saveError);
-            else router.replace('/forge');
-          });
-        }}
-      />
-    </Screen>
+    </SafeAreaView>
+  );
+}
+
+function Picture({
+  label,
+  art,
+  selected,
+  warm,
+  onPress,
+}: {
+  label: string;
+  art: number;
+  selected: boolean;
+  warm?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.picture}>
+      <View style={[styles.arch, selected ? styles.archOn : styles.archOff, warm && selected ? styles.archWarm : null]}>
+        <Image source={art} style={[styles.portrait, selected ? null : styles.dim]} contentFit="contain" />
+        {selected ? (
+          <View style={styles.check}>
+            <Image source={openingArt.checkWhite} style={{ width: 16, height: 16 }} contentFit="contain" />
+          </View>
+        ) : null}
+      </View>
+      <Text style={styles.pictureLabel}>{label}</Text>
+      <Text style={[styles.pictureSub, selected ? styles.pictureSubOn : null]}>Starts at Low</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  back: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: palette.raised,
+  safe: { flex: 1, backgroundColor: palette.bg },
+  scroll: { paddingHorizontal: 24, paddingTop: 4, gap: 10, paddingBottom: 12 },
+  title: { color: palette.ink, fontFamily: font.display, fontSize: 30, lineHeight: 36, letterSpacing: -0.6, marginTop: 24 },
+  name: { fontFamily: font.displayItalic, color: palette.crimson },
+  sub: { color: palette.muted, fontFamily: font.text, fontSize: 15, lineHeight: 22 },
+  cards: { flexDirection: 'row', gap: 16, marginTop: 10 },
+  picture: { flex: 1, alignItems: 'center', gap: 2 },
+  arch: {
+    width: '100%',
+    height: 236,
+    borderTopLeftRadius: 82,
+    borderTopRightRadius: 82,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  archOn: { borderWidth: 3, borderColor: palette.crimson },
+  archWarm: { backgroundColor: '#F6D7D4' },
+  archOff: { backgroundColor: palette.sunken, borderWidth: 1.5, borderColor: palette.line },
+  portrait: { width: 200, height: 200 },
+  dim: { opacity: 0.85 },
+  check: {
+    position: 'absolute',
+    top: 13,
+    right: 9,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: palette.crimson,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  spacer: { width: 44, height: 44 },
-  dots: { flexDirection: 'row', gap: 6, alignItems: 'center' },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.line },
-  dotOn: { width: 22, backgroundColor: palette.crimson },
-  title: { color: palette.ink, fontFamily: font.display, fontSize: 36, lineHeight: 42 },
-  sub: { color: palette.muted, fontFamily: font.text, fontSize: 16, lineHeight: 22 },
-  row: { flexDirection: 'row', gap: 12 },
-  choice: {
-    flex: 1,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: palette.line,
+  pictureLabel: { color: palette.ink, fontFamily: font.bold, fontSize: 18, marginTop: 10 },
+  pictureSub: { color: palette.tertiary, fontFamily: font.text, fontSize: 13 },
+  pictureSubOn: { color: palette.crimson },
+  grows: {
+    marginTop: 6,
     backgroundColor: palette.raised,
-    overflow: 'hidden',
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+    shadowColor: '#5C331F',
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 3,
   },
-  choiceOn: { borderColor: palette.crimson, borderWidth: 2.5 },
-  preview: { width: '100%', height: 180, backgroundColor: palette.sunken },
-  previewOn: { backgroundColor: palette.blush },
-  choiceFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12 },
-  label: { color: palette.ink, fontFamily: font.bold, fontSize: 16 },
-  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: palette.line },
-  note: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  chip: { backgroundColor: palette.blush, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  chipText: { color: palette.crimson, fontFamily: font.bold, fontSize: 13 },
-  noteText: { color: palette.muted, fontFamily: font.text, fontSize: 14 },
+  growHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  growKicker: { color: palette.tertiary, fontFamily: font.extra, fontSize: 11, letterSpacing: 1.2 },
+  growMeta: { color: palette.tertiary, fontFamily: font.semibold, fontSize: 12 },
+  growRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  growItem: { flexDirection: 'row', alignItems: 'flex-start' },
+  step: { alignItems: 'center', gap: 6 },
+  chevron: { width: 14, height: 14, marginTop: 20, marginHorizontal: 2 },
+  bubble: { width: 54, height: 54, borderRadius: 27, overflow: 'hidden', alignItems: 'center', justifyContent: 'flex-end' },
+  bubbleOn: { borderWidth: 2.5, borderColor: palette.crimson },
+  bubbleArt: { width: 58, height: 58 },
+  bubbleLabel: { color: palette.muted, fontFamily: font.semibold, fontSize: 12 },
+  bubbleLabelOn: { color: palette.crimson },
+  error: { color: palette.crimson, fontFamily: font.semibold },
+  footer: { paddingHorizontal: 24, paddingBottom: 8 },
 });
