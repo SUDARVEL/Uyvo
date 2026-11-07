@@ -78,7 +78,9 @@ export default function VeinTrainScreen() {
       </View>
 
       <View style={styles.plant}>
-        <Image source={treeArt.sapling} style={styles.plantArt} />
+        <View style={styles.plantArt}>
+          <Image source={treeArt.sapling} resizeMode="contain" style={styles.fill} />
+        </View>
         <View style={styles.grow}>
           <Text style={styles.plantTitle}>Your plant is growing</Text>
           <Text style={styles.plantBody}>After 7 full days it becomes a pomegranate.</Text>
@@ -92,7 +94,9 @@ export default function VeinTrainScreen() {
 
       <View style={styles.card}>
         <View style={styles.fruitRow}>
-          <Image source={treeArt.fruit} style={styles.fruit} />
+          <View style={styles.fruit}>
+            <Image source={treeArt.fruit} resizeMode="contain" style={styles.fill} />
+          </View>
           <View style={styles.grow}>
             <Text style={styles.kicker}>RED FRUITS</Text>
             <Text style={styles.fruitCount}>{snap.tree.fruitCount} collected</Text>
@@ -132,7 +136,8 @@ const styles = StyleSheet.create({
   discTextOn: { color: '#FFFFFF' },
   medalLabel: { color: palette.ink, fontFamily: font.semibold, fontSize: 13 },
   plant: { flexDirection: 'row', gap: 12, backgroundColor: palette.leafSoft, borderRadius: 24, padding: 14, alignItems: 'center' },
-  plantArt: { width: 72, height: 72, borderRadius: 16 },
+  plantArt: { width: 72, height: 72, borderRadius: 16, overflow: 'hidden', backgroundColor: palette.bg },
+  fill: { width: '100%', height: '100%' },
   grow: { flex: 1, gap: 4 },
   plantTitle: { color: palette.ink, fontFamily: font.semibold, fontSize: 16 },
   plantBody: { color: palette.muted, fontFamily: font.text, fontSize: 13, lineHeight: 18 },
@@ -140,7 +145,7 @@ const styles = StyleSheet.create({
   tick: { flex: 1, height: 6, borderRadius: 3, backgroundColor: '#D5E4C8' },
   tickOn: { backgroundColor: palette.leaf },
   fruitRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  fruit: { width: 56, height: 56, borderRadius: 14 },
+  fruit: { width: 56, height: 56, borderRadius: 14, overflow: 'hidden', backgroundColor: palette.bg },
   kicker: { color: palette.tertiary, fontFamily: font.bold, fontSize: 11, letterSpacing: 1.2 },
   fruitCount: { color: palette.ink, fontFamily: font.display, fontSize: 22 },
   times: { color: palette.crimson, fontFamily: font.display, fontSize: 28 },

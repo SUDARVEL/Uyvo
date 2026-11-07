@@ -27,7 +27,7 @@ export default function SettingsScreen() {
       {!game.online && game.snap.mode === 'cloud' ? <Banner>No network.</Banner> : null}
       {error ? <Banner tone="crimson">{error}</Banner> : null}
       <View style={styles.profile}>
-        <Image source={heroArt[avatar][state]} style={styles.avatar} />
+        <Image source={heroArt[avatar][state]} resizeMode="contain" style={styles.avatar} />
         <View style={styles.grow}>
           <Text style={styles.name}>{profile?.displayName}</Text>
           <Text style={styles.meta}>

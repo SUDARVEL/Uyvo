@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FullWeek } from '@/components/full-week';
 import { Icon, type IconName } from '@/components/icons';
@@ -23,10 +24,12 @@ function tabIcon(on: IconName, off: IconName) {
 
 export default function TabsLayout() {
   const game = useGame();
+  const insets = useSafeAreaInsets();
   if (!game.ready) return null;
   if (game.snap.mode === 'signed_out') return <Redirect href="/sign-in" />;
   if (!game.snap.profile?.onboardedAt) return <Redirect href="/onboarding/name" />;
   const week = game.notice?.toLowerCase().includes('red fruit') ?? false;
+  const tabInset = Math.max(insets.bottom, 8);
 
   return (
     <View style={{ flex: 1 }}>
@@ -36,8 +39,9 @@ export default function TabsLayout() {
           tabBarStyle: {
             backgroundColor: palette.raised,
             borderTopColor: palette.line,
-            height: 72,
-            paddingTop: 6,
+            height: 64 + tabInset,
+            paddingTop: 8,
+            paddingBottom: tabInset,
           },
           tabBarActiveTintColor: palette.crimson,
           tabBarInactiveTintColor: palette.tertiary,

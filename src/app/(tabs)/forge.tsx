@@ -52,7 +52,9 @@ function OrderRow({
 }) {
   return (
     <View style={[styles.order, state === 'locked' ? styles.locked : null]}>
-      <Image source={art} style={styles.thumb} />
+      <View style={styles.thumbBox}>
+        <Image source={art} resizeMode="contain" style={styles.fill} />
+      </View>
       <View style={styles.grow}>
         <Text style={[styles.orderTitle, state === 'locked' ? styles.faint : null]}>{title}</Text>
         <Text style={styles.orderDetail}>{detail}</Text>
@@ -156,7 +158,7 @@ export default function ForgeScreen() {
 
       <View style={styles.card}>
         <View style={styles.portraitWrap}>
-          <Image source={heroArt[avatar][state]} style={styles.portrait} resizeMode="cover" />
+          <Image source={heroArt[avatar][state]} style={styles.portrait} resizeMode="contain" />
           <View style={styles.badge}>
             <Icon name="sun" size={14} />
             <Text style={styles.badgeText}>Starts empty each morning</Text>
@@ -309,7 +311,9 @@ export default function ForgeScreen() {
         <Text style={styles.sectionMeta}>Water, banana, walk</Text>
       </View>
       <View style={styles.order}>
-        <Image source={foodArt.water} style={styles.thumb} />
+        <View style={styles.thumbBox}>
+          <Image source={foodArt.water} resizeMode="contain" style={styles.fill} />
+        </View>
         <View style={styles.grow}>
           <Text style={styles.orderTitle}>Water</Text>
           <Text style={styles.orderDetail}>{glasses} of 12 glasses · 5 flow each</Text>
@@ -337,7 +341,9 @@ export default function ForgeScreen() {
         disabled={busy || done.has('banana')}
         onPress={() => run(() => game.logQuest({ questKey: 'banana' }))}
         style={styles.order}>
-        <Image source={foodArt.banana} style={styles.thumb} />
+        <View style={styles.thumbBox}>
+          <Image source={foodArt.banana} resizeMode="contain" style={styles.fill} />
+        </View>
         <View style={styles.grow}>
           <Text style={styles.orderTitle}>Banana</Text>
           <Text style={styles.orderDetail}>5 flow · once today</Text>
@@ -355,7 +361,9 @@ export default function ForgeScreen() {
         disabled={busy || done.has('walk')}
         onPress={() => run(() => game.logQuest({ questKey: 'walk' }))}
         style={styles.order}>
-        <Image source={foodArt.walk} style={styles.thumb} />
+        <View style={styles.thumbBox}>
+          <Image source={foodArt.walk} resizeMode="contain" style={styles.fill} />
+        </View>
         <View style={styles.grow}>
           <Text style={styles.orderTitle}>A short walk</Text>
           <Text style={styles.orderDetail}>10 flow · once today</Text>
@@ -403,7 +411,9 @@ function NextCard({
 }) {
   return (
     <View style={styles.next}>
-      <Image source={art} style={styles.heroFood} />
+      <View style={styles.heroFoodBox}>
+        <Image source={art} resizeMode="contain" style={styles.fill} />
+      </View>
       <Text style={styles.nextKicker}>NEXT · {index} OF 5</Text>
       <Text style={styles.nextTitle}>{title}</Text>
       <Text style={styles.nextBody}>{body}</Text>
@@ -447,8 +457,8 @@ const styles = StyleSheet.create({
   streakChip: { backgroundColor: palette.leafSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
   streakText: { color: palette.leaf, fontFamily: font.bold, fontSize: 12 },
   card: { backgroundColor: palette.raised, borderRadius: 24, padding: 14, gap: 12 },
-  portraitWrap: { borderRadius: 20, overflow: 'hidden', backgroundColor: palette.sunken, height: 280 },
-  portrait: { width: '100%', height: 280 },
+  portraitWrap: { borderRadius: 20, overflow: 'hidden', backgroundColor: palette.bg, height: 300 },
+  portrait: { width: '100%', height: 300 },
   badge: {
     position: 'absolute',
     left: 12,
@@ -475,7 +485,14 @@ const styles = StyleSheet.create({
   ironText: { color: palette.crimson, fontFamily: font.bold, fontSize: 14 },
   flowText: { color: palette.leaf, fontFamily: font.bold, fontSize: 14 },
   next: { gap: 10 },
-  heroFood: { width: '100%', height: 160, borderRadius: 18, backgroundColor: palette.blush },
+  heroFoodBox: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: palette.bg,
+  },
+  fill: { width: '100%', height: '100%' },
   nextKicker: { color: palette.crimson, fontFamily: font.bold, fontSize: 12, letterSpacing: 1.2 },
   nextTitle: { color: palette.ink, fontFamily: font.display, fontSize: 26, lineHeight: 32 },
   nextBody: { color: palette.muted, fontFamily: font.text, fontSize: 15, lineHeight: 21 },
@@ -506,7 +523,13 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   locked: { opacity: 0.55 },
-  thumb: { width: 52, height: 52, borderRadius: 14, backgroundColor: palette.sunken },
+  thumbBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: palette.bg,
+  },
   grow: { flex: 1 },
   orderTitle: { color: palette.ink, fontFamily: font.semibold, fontSize: 16 },
   faint: { color: palette.tertiary },
