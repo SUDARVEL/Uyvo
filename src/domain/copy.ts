@@ -17,30 +17,14 @@ export const REMINDERS = [
     id: 'uyvo-1100',
     hour: 11,
     minute: 0,
-    title: 'Your red juice is ready',
-    body: 'Drink it before lunch. Lemon or guava doubles the iron.',
+    title: 'Red juice',
+    body: 'Drink the red juice. That gives 15 iron points and 5 flow points. Lemon or guava doubles the iron.',
   },
   {
     id: 'uyvo-1330',
     hour: 13,
     minute: 30,
-    title: 'Green leaves, then wait',
-    body: 'Eat them now. Then wait 60 minutes with no tea.',
+    title: 'Lunch, then wait',
+    body: 'Eat green leaves. That gives 15 iron points. Then tap Start the wait. No tea for 60 minutes.',
   },
 ] as const;
-
-export const UPDATE_NOTICE = {
-  title: 'Your notice looks new',
-  body: 'Pull down any page. The words change with each update.',
-};
-
-export function noticeForNow(now: Date): (typeof REMINDERS)[number] {
-  const minutes = now.getHours() * 60 + now.getMinutes();
-  if (minutes < 11 * 60) return REMINDERS[0];
-  if (minutes < 13 * 60 + 30) return REMINDERS[1];
-  return REMINDERS[2];
-}
-
-export function reminderById(id: string | undefined): (typeof REMINDERS)[number] {
-  return REMINDERS.find((reminder) => reminder.id === id) ?? REMINDERS[0];
-}

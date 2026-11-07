@@ -82,7 +82,7 @@ export async function rescheduleIfAllowed(): Promise<void> {
   await scheduleReminders();
 }
 
-export async function notifyUpdateReady(title = 'Uyvo has something new', body = 'Tap to see it.'): Promise<void> {
+export async function notifyUpdateReady(): Promise<void> {
   if (Platform.OS === 'web') return;
   const Notifications = await prepare();
   if (Platform.OS === 'android') {
@@ -108,8 +108,8 @@ export async function notifyUpdateReady(title = 'Uyvo has something new', body =
   await Notifications.scheduleNotificationAsync({
     identifier: 'uyvo-update',
     content: {
-      title,
-      body,
+      title: 'Uyvo has something new',
+      body: 'Tap to see it.',
       data: { kind: 'update' },
       priority: Notifications.AndroidNotificationPriority.HIGH,
       sound: true,
@@ -118,16 +118,6 @@ export async function notifyUpdateReady(title = 'Uyvo has something new', body =
     // `{ channelId }` is the immediate trigger that uses updates-high.
     trigger: Platform.OS === 'android' ? { channelId: 'updates-high' } : null,
   });
-}
-
-export async function listenForNotices(onNotice: (title: string, body: string) => void): Promise<() => void> {
-  if (Platform.OS === 'web') return () => undefined;
-  const Notifications = await notifications();
-  const subscription = Notifications.addNotificationReceivedListener((event) => {
-    if (event.request.content.data?.kind === 'update') return;
-    onNotice(event.request.content.title ?? 'Uyvo', event.request.content.body ?? '');
-  });
-  return () => subscription.remove();
 }
 
 export async function listenForForgeOpens(onOpen: () => void): Promise<() => void> {
