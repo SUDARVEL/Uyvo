@@ -17,5 +17,5 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
   ],
-  "exclude": ["src/domain/engine.test.ts"]
+  "exclude": ["src/domain/engine.test.ts", "src/domain/reminder-plan.test.ts"]
 }

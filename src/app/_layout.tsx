@@ -16,6 +16,7 @@ import { listenForForgeOpens } from '@/lib/notifications';
 import { migrate } from '@/lib/store';
 import { GameProvider, useGame } from '@/state/game';
 import { RefreshProvider } from '@/state/refresh';
+import { RemindersProvider } from '@/state/reminders';
 import { palette } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -69,11 +70,13 @@ export default function RootLayout() {
     <ThemeProvider value={navigationTheme}>
       <SQLiteProvider databaseName="uyvo.db" onInit={migrate}>
         <GameProvider>
-          <RefreshProvider>
-            <StatusBar style="dark" />
-            <ForgeNotifications />
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }} />
-          </RefreshProvider>
+          <RemindersProvider>
+            <RefreshProvider>
+              <StatusBar style="dark" />
+              <ForgeNotifications />
+              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }} />
+            </RefreshProvider>
+          </RemindersProvider>
         </GameProvider>
       </SQLiteProvider>
     </ThemeProvider>
