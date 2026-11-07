@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { Image as ExpoImage } from 'expo-image';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { openingArt } from '@/art';
 import { Banner, Body, Button, Field, Screen, Title } from '@/components/ui';
 import { useGame } from '@/state/game';
+import { PullRefresh } from '@/state/refresh';
 import { font, palette } from '@/theme';
 
 let splashPlayed = false;
@@ -117,6 +118,12 @@ function Welcome({ busy, onStart }: { busy: boolean; onStart: () => void }) {
   return (
     <SafeAreaView style={styles.welcome} edges={['top', 'left', 'right']}>
       <StatusBar style="dark" />
+      <ScrollView
+        style={styles.welcomeScroll}
+        contentContainerStyle={styles.welcomeContent}
+        keyboardShouldPersistTaps="handled"
+        alwaysBounceVertical
+        refreshControl={<PullRefresh />}>
       <View style={{ width, height: 452 * s }}>
         <View style={[styles.arch, { left: 64 * s, top: 14 * s, width: 262 * s, height: 392 * s, borderTopLeftRadius: 131 * s, borderTopRightRadius: 131 * s, borderBottomLeftRadius: 36 * s, borderBottomRightRadius: 36 * s }]}>
           <Svg style={StyleSheet.absoluteFill}>
@@ -161,6 +168,7 @@ function Welcome({ busy, onStart }: { busy: boolean; onStart: () => void }) {
           <Text style={styles.link}>Admin</Text>
         </Pressable>
       </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -201,6 +209,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   welcome: { flex: 1, backgroundColor: palette.bg },
+  welcomeScroll: { flex: 1 },
+  welcomeContent: { flexGrow: 1 },
   arch: { position: 'absolute', overflow: 'hidden', backgroundColor: '#F2C7C4' },
   float: {
     position: 'absolute',

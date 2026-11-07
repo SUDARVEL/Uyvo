@@ -9,6 +9,7 @@ import { OnboardingBar } from '@/app/onboarding/name';
 import { Button } from '@/components/ui';
 import type { AvatarId } from '@/domain/engine';
 import { useGame } from '@/state/game';
+import { PullRefresh } from '@/state/refresh';
 import { font, palette } from '@/theme';
 
 const growth = [
@@ -33,7 +34,12 @@ export default function AvatarScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.list}
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        alwaysBounceVertical
+        refreshControl={<PullRefresh />}>
         <OnboardingBar step={2} onBack={() => router.back()} />
         <Text style={styles.title}>
           Hi <Text style={styles.name}>{name}</Text>,{'\n'}pick your picture.
@@ -113,7 +119,8 @@ function Picture({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
-  scroll: { paddingHorizontal: 24, paddingTop: 4, gap: 10, paddingBottom: 12 },
+  list: { flex: 1 },
+  scroll: { paddingHorizontal: 24, paddingTop: 4, gap: 10, paddingBottom: 12, flexGrow: 1 },
   title: { color: palette.ink, fontFamily: font.display, fontSize: 30, lineHeight: 36, letterSpacing: -0.6, marginTop: 24 },
   name: { fontFamily: font.displayItalic, color: palette.crimson },
   sub: { color: palette.muted, fontFamily: font.text, fontSize: 15, lineHeight: 22 },

@@ -12,14 +12,16 @@ async function prepare() {
     handleNotification: async () => ({
       shouldShowBanner: true,
       shouldShowList: true,
-      shouldPlaySound: false,
+      shouldPlaySound: true,
       shouldSetBadge: false,
+      priority: Notifications.AndroidNotificationPriority.HIGH,
     }),
   });
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('forge', {
+    await Notifications.setNotificationChannelAsync('reminders', {
       name: 'Daily reminders',
-      importance: Notifications.AndroidImportance.DEFAULT,
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 200],
     });
   }
   return Notifications;
@@ -45,7 +47,7 @@ export async function scheduleReminders(): Promise<void> {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour: reminder.hour,
         minute: reminder.minute,
-        channelId: 'forge',
+        channelId: 'reminders',
       },
     });
   }
@@ -83,32 +85,46 @@ export async function rescheduleIfAllowed(): Promise<void> {
 export async function notifyUpdateReady(): Promise<void> {
   if (Platform.OS === 'web') return;
   const Notifications = await prepare();
-  await Notifications.setNotificationChannelAsync('updates', {
-    name: 'App updates',
-    importance: Notifications.AndroidImportance.DEFAULT,
-  });
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('updates-high', {
+      name: 'App updates',
+      importance: Notifications.AndroidImportance.HIGH,
+      sound: 'default',
+    });
+  }
   const current = await Notifications.getPermissionsAsync();
   const granted = current.granted || (await Notifications.requestPermissionsAsync()).granted;
   if (!granted) return;
+  try {
+    await Notifications.dismissNotificationAsync('uyvo-update');
+  } catch {
+    // Nothing is showing yet.
+  }
+  try {
+    await Notifications.cancelScheduledNotificationAsync('uyvo-update');
+  } catch {
+    // Nothing is waiting.
+  }
   await Notifications.scheduleNotificationAsync({
     identifier: 'uyvo-update',
     content: {
       title: 'Uyvo has something new',
-      body: 'Open the app to see it.',
+      body: 'Tap to see it.',
       data: { kind: 'update' },
+      priority: Notifications.AndroidNotificationPriority.HIGH,
+      sound: true,
     },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-      seconds: 1,
-      channelId: 'updates',
-    },
+    // A null trigger is immediate, but on Android it ignores the channel.
+    // `{ channelId }` is the immediate trigger that uses updates-high.
+    trigger: Platform.OS === 'android' ? { channelId: 'updates-high' } : null,
   });
 }
 
 export async function listenForForgeOpens(onOpen: () => void): Promise<() => void> {
   if (Platform.OS === 'web') return () => undefined;
   const Notifications = await notifications();
-  const subscription = Notifications.addNotificationResponseReceivedListener(() => {
+  const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+    if (response.notification.request.content.data?.kind === 'update') return;
     onOpen();
   });
   return () => subscription.remove();

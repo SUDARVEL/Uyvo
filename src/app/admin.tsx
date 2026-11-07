@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,6 +7,7 @@ import { Button, Field, Screen } from '@/components/ui';
 import { adminMatches } from '@/lib/admin-gate';
 import type { PlanKey, PlanStep } from '@/domain/plan';
 import { useGame } from '@/state/game';
+import { PullRefresh } from '@/state/refresh';
 import { font, palette } from '@/theme';
 
 export default function AdminScreen() {
@@ -28,6 +29,13 @@ export default function AdminScreen() {
   if (!game.adminOpen) {
     return (
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          alwaysBounceVertical
+          refreshControl={<PullRefresh />}>
+        <View style={styles.grow}>
         <View style={styles.pad}>
           <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}>
             <Text style={styles.backText}>Back</Text>
@@ -37,6 +45,7 @@ export default function AdminScreen() {
           <Field label="Id" value={id} onChangeText={setId} autoCapitalize="none" />
           <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" />
           {error ? <Text style={styles.error}>{error}</Text> : null}
+        </View>
         </View>
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
           <Button
@@ -51,6 +60,7 @@ export default function AdminScreen() {
             }}
           />
         </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -108,7 +118,10 @@ export default function AdminScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
-  pad: { flex: 1, paddingHorizontal: 24, paddingTop: 8, gap: 12 },
+  scroll: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  grow: { flexGrow: 1 },
+  pad: { paddingHorizontal: 24, paddingTop: 8, gap: 12 },
   footer: { paddingHorizontal: 24 },
   back: {
     alignSelf: 'flex-start',

@@ -1,7 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { AppState, Platform } from 'react-native';
+import { useEffect } from 'react';
 import { DarkTheme, Stack, ThemeProvider, useRouter } from 'expo-router';
-import * as Updates from 'expo-updates';
 import { useFonts } from 'expo-font';
 import { SQLiteProvider } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
@@ -14,9 +12,10 @@ import { PlusJakartaSans_600SemiBold } from '@expo-google-fonts/plus-jakarta-san
 import { PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans/700Bold';
 import { PlusJakartaSans_800ExtraBold } from '@expo-google-fonts/plus-jakarta-sans/800ExtraBold';
 
-import { listenForForgeOpens, notifyUpdateReady } from '@/lib/notifications';
+import { listenForForgeOpens } from '@/lib/notifications';
 import { migrate } from '@/lib/store';
 import { GameProvider, useGame } from '@/state/game';
+import { RefreshProvider } from '@/state/refresh';
 import { palette } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -33,50 +32,6 @@ const navigationTheme = {
     notification: palette.crimson,
   },
 };
-
-function UpdateNotice() {
-  const updates = Updates.useUpdates();
-  const told = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (Platform.OS === 'web' || !Updates.isEnabled) return;
-    const look = () => {
-      void Updates.checkForUpdateAsync()
-        .then((result) => {
-          if (result.isAvailable) return Updates.fetchUpdateAsync();
-        })
-        .catch(() => undefined);
-    };
-    look();
-    const app = AppState.addEventListener('change', (state) => {
-      if (state === 'active') look();
-    });
-    return () => app.remove();
-  }, []);
-
-  useEffect(() => {
-    if (!updates.isUpdatePending) return;
-    const id = updates.downloadedUpdate?.updateId ?? 'pending';
-    if (told.current === id) return;
-    told.current = id;
-    void notifyUpdateReady();
-  }, [updates.isUpdatePending, updates.downloadedUpdate]);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    let remove: () => void = () => undefined;
-    void import('expo-notifications').then((Notifications) => {
-      const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-        const data = response.notification.request.content.data;
-        if (data?.kind === 'update') void Updates.reloadAsync();
-      });
-      remove = () => sub.remove();
-    });
-    return () => remove();
-  }, []);
-
-  return null;
-}
 
 function ForgeNotifications() {
   const router = useRouter();
@@ -114,10 +69,11 @@ export default function RootLayout() {
     <ThemeProvider value={navigationTheme}>
       <SQLiteProvider databaseName="uyvo.db" onInit={migrate}>
         <GameProvider>
-          <StatusBar style="dark" />
-          <ForgeNotifications />
-          <UpdateNotice />
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }} />
+          <RefreshProvider>
+            <StatusBar style="dark" />
+            <ForgeNotifications />
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }} />
+          </RefreshProvider>
         </GameProvider>
       </SQLiteProvider>
     </ThemeProvider>

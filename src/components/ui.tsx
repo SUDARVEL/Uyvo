@@ -14,13 +14,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { markArt } from '@/art';
+import { PullRefresh } from '@/state/refresh';
 import { font, palette } from '@/theme';
 
 export function Screen({ children, overlay }: { children: ReactNode; overlay?: ReactNode }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.frame}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          alwaysBounceVertical
+          refreshControl={<PullRefresh />}>
           {children}
         </ScrollView>
         {overlay}
@@ -159,7 +164,7 @@ export function cardStyle(extra?: ViewStyle): ViewStyle[] {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   frame: { flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center' },
-  content: { padding: 24, paddingBottom: 120, gap: 16 },
+  content: { padding: 24, paddingBottom: 120, gap: 16, flexGrow: 1 },
   boot: { flex: 1, backgroundColor: palette.bg, alignItems: 'center', justifyContent: 'center', gap: 8 },
   brand: { color: palette.ink, fontSize: 40, fontFamily: font.display },
   eyebrow: { color: palette.tertiary, fontSize: 12, letterSpacing: 1.4, fontFamily: font.bold },

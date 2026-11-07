@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Image } from 'expo-image';
 import { Redirect, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { openingArt } from '@/art';
 import { Button } from '@/components/ui';
 import { validateName } from '@/domain/engine';
 import { useGame } from '@/state/game';
+import { PullRefresh } from '@/state/refresh';
 import { font, palette } from '@/theme';
 
 export function OnboardingBar({ step, onBack }: { step: 1 | 2; onBack: () => void }) {
@@ -40,6 +41,13 @@ export default function NameScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        alwaysBounceVertical
+        refreshControl={<PullRefresh />}>
+      <View style={styles.grow}>
       <View style={styles.pad}>
         <OnboardingBar
           step={1}
@@ -73,6 +81,7 @@ export default function NameScreen() {
         ) : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </View>
+      </View>
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
         <Button
           label="Next"
@@ -87,12 +96,16 @@ export default function NameScreen() {
           }}
         />
       </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
+  scroll: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  grow: { flexGrow: 1 },
   pad: { paddingHorizontal: 24, paddingTop: 4 },
   bar: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 44 },
   back: {
