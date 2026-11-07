@@ -101,7 +101,7 @@ export default function SettingsScreen() {
               key={reminder.id}
               accessibilityRole="button"
               onPress={() => {
-                if (reminder.id === 'uyvo-0730') router.push('/reminder');
+                router.push(`/reminder?id=${reminder.id}`);
               }}
               style={styles.row}>
               <Text style={styles.rowLabel}>{label}</Text>
