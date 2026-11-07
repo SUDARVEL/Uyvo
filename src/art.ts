@@ -34,7 +34,6 @@ export const treeArt = {
 } as const;
 
 export const markArt = require('../assets/figma/logo.png') as ImageSourcePropType;
-export const noticeMark = require('../assets/figma/notice-mark.png') as ImageSourcePropType;
 
 export const openingArt = {
   icon: require('../assets/figma/onboarding/app-icon.png'),
