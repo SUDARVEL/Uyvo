@@ -16,6 +16,7 @@ import {
   drinkTea,
   logQuest,
   readSnap,
+  removeLastWater,
   saveAvatar,
   dismissCoach,
   saveName,
@@ -53,6 +54,8 @@ type GameValue = {
   }) => Promise<string | null>;
   startDigest: () => Promise<string | null>;
   drinkTea: () => Promise<string | null>;
+  removeWater: () => Promise<string | null>;
+  clearNotice: () => void;
   dismissCoach: () => Promise<void>;
   syncNow: () => Promise<void>;
 };
@@ -225,6 +228,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       logQuest: async (input) => apply(await logQuest(db, input)),
       startDigest: async () => apply(await startDigest(db)),
       drinkTea: async () => apply(await drinkTea(db)),
+      removeWater: async () => apply(await removeLastWater(db)),
+      clearNotice: () => setNotice(null),
       dismissCoach: async () => {
         await dismissCoach(db);
         await refresh();

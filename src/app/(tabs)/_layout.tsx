@@ -1,27 +1,53 @@
+import { View } from 'react-native';
 import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 
+import { FullWeek } from '@/components/full-week';
+import { Icon, type IconName } from '@/components/icons';
 import { useGame } from '@/state/game';
-import { palette } from '@/theme';
+import { font, palette } from '@/theme';
+
+function tabIcon(on: IconName, off: IconName) {
+  return ({ focused }: { focused: boolean }) => (
+    <View
+      style={{
+        backgroundColor: focused ? palette.blush : 'transparent',
+        borderRadius: 999,
+        paddingHorizontal: 14,
+        paddingVertical: 4,
+      }}>
+      <Icon name={focused ? on : off} size={22} />
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   const game = useGame();
   if (!game.ready) return null;
   if (game.snap.mode === 'signed_out') return <Redirect href="/sign-in" />;
   if (!game.snap.profile?.onboardedAt) return <Redirect href="/onboarding/name" />;
+  const week = game.notice?.toLowerCase().includes('red fruit') ?? false;
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: { backgroundColor: palette.raised, borderTopColor: palette.line },
-        tabBarIcon: () => null,
-        tabBarActiveTintColor: palette.ink,
-        tabBarInactiveTintColor: palette.muted,
-      }}>
-      <Tabs.Screen name="forge" options={{ title: 'Today' }} />
-      <Tabs.Screen name="vein-train" options={{ title: 'Days' }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
-    </Tabs>
+    <View style={{ flex: 1 }}>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: palette.raised,
+            borderTopColor: palette.line,
+            height: 72,
+            paddingTop: 6,
+          },
+          tabBarActiveTintColor: palette.crimson,
+          tabBarInactiveTintColor: palette.tertiary,
+          tabBarLabelStyle: { fontFamily: font.bold, fontSize: 12 },
+        }}>
+        <Tabs.Screen name="forge" options={{ title: 'Today', tabBarIcon: tabIcon('sunOn', 'sunMuted') }} />
+        <Tabs.Screen name="vein-train" options={{ title: 'Days', tabBarIcon: tabIcon('sprout', 'sproutMuted') }} />
+        <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: tabIcon('slidersOn', 'sliders') }} />
+      </Tabs>
+      {week ? <FullWeek fruitCount={game.snap.tree.fruitCount} onClose={game.clearNotice} /> : null}
+    </View>
   );
 }

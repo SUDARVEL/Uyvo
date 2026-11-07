@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { palette } from '@/theme';
+import { markArt } from '@/art';
+import { font, palette } from '@/theme';
 
 export function Screen({ children, overlay }: { children: ReactNode; overlay?: ReactNode }) {
   return (
@@ -31,7 +32,7 @@ export function Screen({ children, overlay }: { children: ReactNode; overlay?: R
 export function Mark({ size = 220 }: { size?: number }) {
   return (
     <Image
-      source={require('../../assets/images/uyvo-logo.png')}
+      source={markArt}
       accessibilityLabel="Uyvo"
       style={{ width: size, height: size, alignSelf: 'center' }}
     />
@@ -111,8 +112,7 @@ export function Button({
   disabled?: boolean;
   tone?: 'orange' | 'crimson' | 'leaf' | 'quiet';
 }) {
-  const background =
-    tone === 'crimson' ? palette.crimson : tone === 'leaf' ? palette.leaf : tone === 'quiet' ? palette.raised : palette.ink;
+  const background = tone === 'quiet' ? palette.raised : palette.crimson;
   const color = tone === 'quiet' ? palette.ink : '#FFFFFF';
   return (
     <Pressable
@@ -159,30 +159,31 @@ export function cardStyle(extra?: ViewStyle): ViewStyle[] {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   frame: { flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center' },
-  content: { padding: 20, paddingBottom: 48, gap: 14 },
+  content: { padding: 24, paddingBottom: 120, gap: 16 },
   boot: { flex: 1, backgroundColor: palette.bg, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  brand: { color: palette.ink, fontSize: 40, fontWeight: '600' },
-  eyebrow: { color: palette.muted, fontSize: 13, fontWeight: '600' },
-  title: { color: palette.ink, fontSize: 34, fontWeight: '600' },
-  body: { color: palette.ink, fontSize: 16, lineHeight: 22 },
-  muted: { color: palette.muted, fontSize: 15 },
-  banner: { borderRadius: 14, padding: 12 },
-  bannerText: { color: palette.ink, fontSize: 14, lineHeight: 20 },
+  brand: { color: palette.ink, fontSize: 40, fontFamily: font.display },
+  eyebrow: { color: palette.tertiary, fontSize: 12, letterSpacing: 1.4, fontFamily: font.bold },
+  title: { color: palette.ink, fontSize: 36, lineHeight: 42, fontFamily: font.display },
+  body: { color: palette.muted, fontSize: 16, lineHeight: 22, fontFamily: font.text },
+  muted: { color: palette.muted, fontSize: 15, fontFamily: font.text },
+  banner: { borderRadius: 16, padding: 12 },
+  bannerText: { color: palette.ink, fontSize: 14, lineHeight: 20, fontFamily: font.text },
   field: { gap: 6 },
-  label: { color: palette.muted, fontSize: 13 },
+  label: { color: palette.muted, fontSize: 13, fontFamily: font.semibold },
   input: {
     backgroundColor: palette.raised,
     color: palette.ink,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 18,
+    borderWidth: 1.5,
     borderColor: palette.line,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
+    paddingHorizontal: 16,
+    height: 60,
+    fontSize: 18,
+    fontFamily: font.semibold,
   },
-  button: { borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  quiet: { borderWidth: 1, borderColor: palette.line },
-  buttonText: { fontSize: 16, fontWeight: '600' },
+  button: { borderRadius: 999, height: 56, alignItems: 'center', justifyContent: 'center' },
+  quiet: { borderWidth: 1.5, borderColor: palette.line },
+  buttonText: { fontSize: 16, fontFamily: font.bold },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: palette.raised,
@@ -193,13 +194,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: palette.line,
   },
-  sheetTitle: { color: palette.ink, fontSize: 22, fontWeight: '600' },
+  sheetTitle: { color: palette.ink, fontSize: 22, fontFamily: font.display },
   card: {
     backgroundColor: palette.raised,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: palette.line,
-    padding: 14,
+    borderRadius: 24,
+    padding: 16,
     gap: 8,
+    shadowColor: '#5C331F',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
   },
 });

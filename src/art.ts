@@ -3,14 +3,14 @@ import type { ImageSourcePropType } from 'react-native';
 import type { AvatarId, HeroState } from '@/domain/engine';
 
 const woman: Record<HeroState, ImageSourcePropType> = {
-  pale: require('../assets/art/plate-woman-low.jpg'),
-  tired: require('../assets/art/plate-woman-tired.jpg'),
-  armored: require('../assets/art/plate-woman-strong.jpg'),
-  glowing: require('../assets/art/plate-woman-full.jpg'),
+  pale: require('../assets/figma/woman-low.jpg'),
+  tired: require('../assets/figma/woman-tired.jpg'),
+  armored: require('../assets/figma/woman-strong.jpg'),
+  glowing: require('../assets/figma/woman-full.jpg'),
 };
 
 const man: Record<HeroState, ImageSourcePropType> = {
-  pale: require('../assets/art/plate-man-low.jpg'),
+  pale: require('../assets/figma/man-low.jpg'),
   tired: require('../assets/art/plate-man-tired.jpg'),
   armored: require('../assets/art/plate-man-strong.jpg'),
   glowing: require('../assets/art/plate-man-full.jpg'),
@@ -19,16 +19,18 @@ const man: Record<HeroState, ImageSourcePropType> = {
 export const heroArt: Record<AvatarId, Record<HeroState, ImageSourcePropType>> = { woman, man };
 
 export const foodArt = {
-  morning_shot: require('../assets/art/plate-morning.jpg'),
-  midmorning_juice: require('../assets/art/plate-juice.jpg'),
-  lunch_greens: require('../assets/art/plate-greens.jpg'),
-  water: require('../assets/art/plate-water.jpg'),
-  banana: require('../assets/art/plate-banana.jpg'),
-  walk: require('../assets/art/plate-walk.jpg'),
-  tea: require('../assets/art/plate-tea.jpg'),
+  morning_shot: require('../assets/figma/soaked-fruit.jpg'),
+  midmorning_juice: require('../assets/figma/red-juice.jpg'),
+  lunch_greens: require('../assets/figma/greens.jpg'),
+  water: require('../assets/figma/water.jpg'),
+  banana: require('../assets/figma/banana.jpg'),
+  walk: require('../assets/figma/walk.jpg'),
+  tea: require('../assets/figma/tea.jpg'),
 } as const;
 
 export const treeArt = {
-  sapling: require('../assets/art/plate-sapling.jpg'),
-  fruit: require('../assets/art/plate-fruit.jpg'),
+  sapling: require('../assets/figma/small-plant.jpg'),
+  fruit: require('../assets/figma/red-fruit.jpg'),
 } as const;
+
+export const markArt = require('../assets/figma/logo.png') as ImageSourcePropType;

@@ -714,6 +714,20 @@ export function saveReminders(db: SQLiteDatabase, enabled: boolean): Promise<Act
   return mutateProfile(db, (profile) => ({ ...profile, remindersEnabled: enabled }));
 }
 
+export function removeLastWater(db: SQLiteDatabase): Promise<ActionResult> {
+  return transaction(db, async () => {
+    const userId = await meta(db, 'active_user_id');
+    if (!userId) return { error: 'Sign in first.', message: null };
+    const today = localDate(new Date());
+    const logs = await readLogs(db, userId);
+    const last = logs.filter((entry) => entry.localDate === today && entry.questKey === 'water').at(-1);
+    if (!last) return { error: null, message: null };
+    await db.runAsync('delete from quest_logs where id = ?', last.id);
+    await bumpWallet(db, userId, -last.ironShardsAwarded, -last.flowPointsAwarded);
+    return { error: null, message: null };
+  });
+}
+
 export function logQuest(
   db: SQLiteDatabase,
   input: { questKey: QuestKey; foodKey?: FoodKey | null; vitaminCFood?: VitaminFood | null },

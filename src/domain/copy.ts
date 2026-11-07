@@ -10,8 +10,8 @@ export const REMINDERS = [
     id: 'uyvo-0730',
     hour: 7,
     minute: 30,
-    title: 'Morning drink',
-    body: 'Soak the dry fruit and drink it. That gives 10 iron points.',
+    title: 'Your soaked dry fruit is ready',
+    body: 'Drink it first. Lemon or guava doubles the iron.',
   },
   {
     id: 'uyvo-1100',

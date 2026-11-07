@@ -1,21 +1,48 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { palette } from '@/theme';
+import { font, palette } from '@/theme';
 
-const steps = [
-  'This picture shows how you are today. Food makes it stronger.',
-  'The big card is the next thing to do. Tap it.',
-  'After green lunch, wait 60 minutes. Do not drink tea.',
-  'The Days tab shows how many days in a row.',
-];
+const pages = [
+  {
+    title: 'Your picture, your food',
+    steps: [
+      ['The picture changes with food.', 'Eat well, it gets stronger.'],
+      ['Tap the big Next card.', 'It always shows what to do now.'],
+    ],
+  },
+  {
+    title: 'Two small rules',
+    steps: [
+      ['After green lunch, wait 60 minutes.', 'Don’t drink tea.'],
+      ['The Days tab counts your days in a row.', 'Seven full days grow a pomegranate.'],
+    ],
+  },
+] as const;
 
 export function Coach({ step, onNext }: { step: number; onNext: () => void }) {
-  const last = step >= steps.length - 1;
+  const page = pages[Math.min(step, pages.length - 1)] ?? pages[0];
+  const last = step >= pages.length - 1;
   return (
     <View style={styles.scrim}>
-      <View style={styles.card}>
-        <Text style={styles.count}>{step + 1} of {steps.length}</Text>
-        <Text style={styles.body}>{steps[step]}</Text>
+      <View style={styles.sheet}>
+        <Text style={styles.kicker}>HOW UYVO WORKS</Text>
+        <Text style={styles.title}>{page.title}</Text>
+        {page.steps.map(([lead, rest], index) => (
+          <View key={lead} style={styles.row}>
+            <View style={styles.num}>
+              <Text style={styles.numText}>{step * 2 + index + 1}</Text>
+            </View>
+            <Text style={styles.copy}>
+              <Text style={styles.lead}>{lead} </Text>
+              {rest}
+            </Text>
+          </View>
+        ))}
+        <View style={styles.dots}>
+          {pages.map((_, index) => (
+            <View key={index} style={[styles.dot, index === step ? styles.dotOn : null]} />
+          ))}
+        </View>
         <Pressable accessibilityRole="button" onPress={onNext} style={styles.button}>
           <Text style={styles.buttonText}>{last ? 'Start' : 'Next'}</Text>
         </Pressable>
@@ -27,18 +54,41 @@ export function Coach({ step, onNext }: { step: number; onNext: () => void }) {
 const styles = StyleSheet.create({
   scrim: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(28,28,30,0.45)',
+    backgroundColor: 'rgba(42,26,23,0.28)',
     justifyContent: 'flex-end',
-    padding: 16,
   },
-  card: {
+  sheet: {
     backgroundColor: palette.raised,
-    borderRadius: 20,
-    padding: 20,
-    gap: 12,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 22,
+    paddingBottom: 28,
+    gap: 16,
   },
-  count: { color: palette.muted, fontSize: 13 },
-  body: { color: palette.ink, fontSize: 22, fontWeight: '600', lineHeight: 28 },
-  button: { backgroundColor: palette.ink, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  kicker: { color: palette.tertiary, fontFamily: font.bold, fontSize: 12, letterSpacing: 1.4 },
+  title: { color: palette.ink, fontFamily: font.display, fontSize: 28, lineHeight: 34 },
+  row: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  num: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: palette.blush,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  numText: { color: palette.crimson, fontFamily: font.bold, fontSize: 14 },
+  copy: { flex: 1, color: palette.muted, fontFamily: font.text, fontSize: 15, lineHeight: 21 },
+  lead: { color: palette.ink, fontFamily: font.semibold },
+  dots: { flexDirection: 'row', gap: 6, justifyContent: 'center' },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.line },
+  dotOn: { width: 18, backgroundColor: palette.crimson },
+  button: {
+    height: 56,
+    borderRadius: 999,
+    backgroundColor: palette.crimson,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: { color: '#FFFFFF', fontFamily: font.bold, fontSize: 16 },
 });
