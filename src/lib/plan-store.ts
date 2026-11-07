@@ -1,10 +1,11 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import { DEFAULT_PLAN, PLAN_KEYS, type PlanKey, type PlanStep } from '@/domain/plan';
+import { DEFAULT_PLAN, FOOD_STEPS, PLAN_KEYS, normalizeOrder, type FoodStepKey, type PlanKey, type PlanStep } from '@/domain/plan';
 
 const PLAN_KEY = 'plan_steps';
 const FOOD_KEY = 'my_foods';
 const ADMIN_KEY = 'admin_open';
+const ORDER_KEY = 'my_order';
 
 function isPlanKey(value: string): value is PlanKey {
   return (PLAN_KEYS as readonly string[]).includes(value);
@@ -70,6 +71,22 @@ export async function writeFood(db: SQLiteDatabase, key: PlanKey, name: string):
   else delete foods[key];
   await writeMeta(db, FOOD_KEY, JSON.stringify(foods));
   return foods;
+}
+
+export async function readOrder(db: SQLiteDatabase): Promise<FoodStepKey[]> {
+  const raw = await readMeta(db, ORDER_KEY);
+  if (!raw) return [...FOOD_STEPS];
+  try {
+    return normalizeOrder(JSON.parse(raw));
+  } catch {
+    return [...FOOD_STEPS];
+  }
+}
+
+export async function writeOrder(db: SQLiteDatabase, order: FoodStepKey[]): Promise<FoodStepKey[]> {
+  const next = normalizeOrder(order);
+  await writeMeta(db, ORDER_KEY, JSON.stringify(next));
+  return next;
 }
 
 export async function readAdminOpen(db: SQLiteDatabase): Promise<boolean> {

@@ -21,6 +21,27 @@ export type PlanStep = {
 
 export const FOOD_KEYS: PlanKey[] = ['morning_shot', 'midmorning_juice', 'lunch_greens', 'banana'];
 
+export const FOOD_STEPS = ['morning_shot', 'midmorning_juice', 'lunch_greens'] as const;
+
+export type FoodStepKey = (typeof FOOD_STEPS)[number];
+
+export function normalizeOrder(value: unknown): FoodStepKey[] {
+  const incoming = Array.isArray(value) ? value : [];
+  const seen = new Set<string>();
+  const picked: FoodStepKey[] = [];
+  for (const item of incoming) {
+    if (typeof item !== 'string') continue;
+    const key = FOOD_STEPS.find((step) => step === item);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    picked.push(key);
+  }
+  for (const key of FOOD_STEPS) {
+    if (!seen.has(key)) picked.push(key);
+  }
+  return picked;
+}
+
 export const DEFAULT_PLAN: PlanStep[] = [
   {
     key: 'morning_shot',
@@ -33,14 +54,14 @@ export const DEFAULT_PLAN: PlanStep[] = [
     key: 'midmorning_juice',
     title: 'Drink the red juice',
     detail: '15 iron · 5 flow',
-    body: 'Beetroot or pomegranate juice. Drink it before lunch.',
+    body: 'One glass of beetroot, pomegranate and carrot.',
     action: 'I drank it',
   },
   {
     key: 'lunch_greens',
-    title: 'Eat green leaves',
+    title: 'Eat your green leaves',
     detail: '15 iron · keerai, spinach, beetroot',
-    body: 'Keerai, spinach, or beetroot. Then the 60 minute wait.',
+    body: 'Keerai, spinach or beetroot leaves with lunch.',
     action: 'I ate it',
   },
   {

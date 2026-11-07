@@ -19,9 +19,9 @@ const man: Record<HeroState, ImageSourcePropType> = {
 export const heroArt: Record<AvatarId, Record<HeroState, ImageSourcePropType>> = { woman, man };
 
 export const foodArt = {
-  morning_shot: require('../assets/figma/soaked-fruit.jpg'),
-  midmorning_juice: require('../assets/figma/red-juice.jpg'),
-  lunch_greens: require('../assets/figma/greens.jpg'),
+  morning_shot: require('../assets/figma/cards/soaked-fruit.png'),
+  midmorning_juice: require('../assets/figma/cards/red-juice.png'),
+  lunch_greens: require('../assets/figma/cards/green-leaves.png'),
   water: require('../assets/figma/water.jpg'),
   banana: require('../assets/figma/banana.jpg'),
   walk: require('../assets/figma/walk.jpg'),
