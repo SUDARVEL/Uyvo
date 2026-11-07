@@ -4,22 +4,34 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Icon } from '@/components/icons';
 import { NoticeCard } from '@/components/notice';
 import { REMINDERS, reminderById } from '@/domain/copy';
+import { clockLabel, reminderCopy, slotFoods, type ReminderTime } from '@/domain/reminder-plan';
+import { useGame } from '@/state/game';
+import { useReminders } from '@/state/reminders';
 import { font } from '@/theme';
 
-function clockLabel(hour: number, minute: number): string {
-  const h = hour % 12 || 12;
-  const suffix = hour < 12 ? 'AM' : 'PM';
-  return `${h}:${String(minute).padStart(2, '0')} ${suffix}`;
+function fromParams(hour: unknown, minute: unknown): ReminderTime | null {
+  if (typeof hour !== 'string' || typeof minute !== 'string') return null;
+  const h = Number.parseInt(hour, 10);
+  const m = Number.parseInt(minute, 10);
+  if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
+  return { hour: h, minute: m };
 }
 
 export default function ReminderScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ id?: string }>();
+  const game = useGame();
+  const reminders = useReminders();
+  const params = useLocalSearchParams<{ id?: string; h?: string; m?: string }>();
   const reminder = reminderById(typeof params.id === 'string' ? params.id : undefined);
+  const slot = REMINDERS.findIndex((item) => item.id === reminder.id);
+  const time = fromParams(params.h, params.m) ?? reminders.times[slot];
+  const copy = reminderCopy(slot, slotFoods(game.order)[slot], game.foods);
   const day = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '');
-  const also = REMINDERS.filter((item) => item.id !== reminder.id)
-    .map((item) => clockLabel(item.hour, item.minute))
+  const also = reminders.times
+    .filter((_, index) => index !== slot)
+    .map((item) => clockLabel(item))
     .join(' and ');
+  const clock = `${time.hour % 12 || 12}:${String(time.minute).padStart(2, '0')}`;
 
   return (
     <View style={styles.page}>
@@ -27,8 +39,9 @@ export default function ReminderScreen() {
         <Icon name="back" size={22} />
       </Pressable>
       <Text style={styles.day}>{day}</Text>
-      <Text style={styles.clock}>{`${reminder.hour % 12 || 12}:${String(reminder.minute).padStart(2, '0')}`}</Text>
-      <NoticeCard title={reminder.title} body={reminder.body} onPress={() => router.push('/forge')} />
+      <Text style={styles.clock}>{clock}</Text>
+      <Text style={styles.suffix}>{time.hour < 12 ? 'AM' : 'PM'}</Text>
+      <NoticeCard title={copy.title} body={copy.body} onPress={() => router.push('/forge')} />
       <Text style={styles.also}>Also at {also}</Text>
     </View>
   );
@@ -47,5 +60,6 @@ const styles = StyleSheet.create({
   },
   day: { color: '#6E5D55', fontFamily: font.text, fontSize: 16, lineHeight: 22, textAlign: 'center' },
   clock: { color: '#2A1A17', fontFamily: font.display, fontSize: 92, lineHeight: 110, textAlign: 'center' },
+  suffix: { color: '#6E5D55', fontFamily: font.bold, fontSize: 18, textAlign: 'center', marginTop: -28 },
   also: { color: '#6E5D55', fontFamily: font.text, fontSize: 13, lineHeight: 18, textAlign: 'center' },
 });

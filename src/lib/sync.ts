@@ -91,6 +91,7 @@ export async function fetchAccount(userId: string, email: string): Promise<Serve
   const badgeRows = (badges.data ?? []) as Row[];
 
   return {
+    since,
     profile,
     wallet: {
       ironShards: integer(walletRow.iron_shards),
@@ -183,8 +184,13 @@ async function pushRow(supabase: SupabaseClient, row: OutboxItem): Promise<void>
 export async function syncAccount(db: SQLiteDatabase): Promise<string | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
-  const { data } = await supabase.auth.getSession();
-  const user = data.session?.user;
+  let user: { id: string; email?: string } | undefined;
+  try {
+    const { data } = await supabase.auth.getSession();
+    user = data.session?.user;
+  } catch {
+    return 'Could not reach Uyvo.';
+  }
   if (!user) return 'Sign in before syncing.';
 
   while (true) {

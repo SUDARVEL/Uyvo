@@ -1,16 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { emptyStreak, emptyTree, type AvatarId, type FoodKey, type QuestKey, type VitaminFood } from '@/domain/engine';
 import { DEFAULT_PLAN, FOOD_STEPS, type FoodStepKey, type PlanKey, type PlanStep } from '@/domain/plan';
-import {
-  cancelReminders,
-  ensureReminderPermission,
-  rescheduleIfAllowed,
-  scheduleReminders,
-} from '@/lib/notifications';
+import { NOTIFICATIONS_OFF, NOT_IN_BROWSER, cancelReminders, ensureReminderPermission } from '@/lib/notifications';
 import { finishDay, jumpTo, skipStep, type AdminAction } from '@/lib/admin-tools';
 import { getDayOffset, setDayOffset } from '@/lib/clock';
 import { isSupabaseConfigured } from '@/lib/supabase';
@@ -23,6 +18,7 @@ import {
   endWaitNow,
   logQuest,
   readSnap,
+  reconcile,
   undoQuest,
   type UndoableQuest,
   removeLastWater,
@@ -155,7 +151,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     void (async () => {
       const savedOffset = await readDayOffset(db);
       setDayOffset(savedOffset);
-      const next = await boot(db);
+      const next = await boot(db).catch(() => readSnap(db));
       const [nextPlan, nextFoods, nextAdmin, nextOrder] = await Promise.all([
         readPlan(db),
         readFoods(db),
@@ -171,7 +167,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setAdminOpenState(nextAdmin);
       setReady(true);
       await SplashScreen.hideAsync().catch(() => undefined);
-      if (next.profile?.remindersEnabled) await rescheduleIfAllowed();
       if (next.mode === 'cloud') void runSync();
     })();
     return () => {
@@ -218,6 +213,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }, 1000);
     return () => clearInterval(id);
   }, [db, ready, refresh, runSync, snap.mode, snap.teas]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active' || snapRef.current.mode === 'signed_out') return;
+      void (async () => {
+        const message = await settleTea(db);
+        if (message) setNotice(message);
+        await reconcile(db);
+        const next = await refresh();
+        if (next.mode === 'cloud') void runSync();
+      })();
+    });
+    return () => subscription.remove();
+  }, [db, ready, refresh, runSync]);
 
   const apply = useCallback(
     async (result: ActionResult) => {
@@ -284,13 +294,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
       saveAvatar: async (avatarId) => apply(await saveAvatar(db, avatarId)),
       setReminders: async (enabled) => {
         if (Platform.OS === 'web') {
-          if (enabled) return 'Reminders work in the app, not in this browser.';
+          if (enabled) return NOT_IN_BROWSER;
           return apply(await saveReminders(db, false));
         }
         if (enabled) {
           const allowed = await ensureReminderPermission();
-          if (!allowed) return 'Notification permission was denied.';
-          await scheduleReminders();
+          if (!allowed) return NOTIFICATIONS_OFF;
         } else {
           await cancelReminders();
         }

@@ -79,8 +79,12 @@ export default function AvatarScreen() {
             setBusy(true);
             void game.saveAvatar(avatar).then((saveError) => {
               setBusy(false);
-              if (saveError) setError(saveError);
-              else router.replace('/forge');
+              if (saveError) {
+                setError(saveError);
+                return;
+              }
+              router.replace('/forge');
+              void game.setReminders(true).catch(() => undefined);
             });
           }}
         />

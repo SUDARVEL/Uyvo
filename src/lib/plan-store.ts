@@ -1,6 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { DEFAULT_PLAN, FOOD_STEPS, PLAN_KEYS, normalizeOrder, type FoodStepKey, type PlanKey, type PlanStep } from '@/domain/plan';
+import { exclusive } from '@/lib/lock';
 
 const PLAN_KEY = 'plan_steps';
 const FOOD_KEY = 'my_foods';
@@ -65,13 +66,16 @@ export async function readFoods(db: SQLiteDatabase): Promise<Record<string, stri
   }
 }
 
-export async function writeFood(db: SQLiteDatabase, key: PlanKey, name: string): Promise<Record<string, string>> {
-  const foods = await readFoods(db);
-  const trimmed = name.trim().slice(0, 40);
-  if (trimmed) foods[key] = trimmed;
-  else delete foods[key];
-  await writeMeta(db, FOOD_KEY, JSON.stringify(foods));
-  return foods;
+// Reads, changes and writes the whole list in one turn, so two quick renames cannot overwrite each other.
+export function writeFood(db: SQLiteDatabase, key: PlanKey, name: string): Promise<Record<string, string>> {
+  return exclusive(async () => {
+    const foods = await readFoods(db);
+    const trimmed = name.trim().slice(0, 40);
+    if (trimmed) foods[key] = trimmed;
+    else delete foods[key];
+    await writeMeta(db, FOOD_KEY, JSON.stringify(foods));
+    return foods;
+  });
 }
 
 export async function readOrder(db: SQLiteDatabase): Promise<FoodStepKey[]> {

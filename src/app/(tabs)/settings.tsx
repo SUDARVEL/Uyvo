@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View, type ImageSourcePropType } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View, type ImageSourcePropType } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { foodArt, heroArt, openingArt } from '@/art';
 import { PictureCard, Radio } from '@/components/picture-card';
 import { Banner, Screen } from '@/components/ui';
-import { Icon, Toggle } from '@/components/icons';
-import { REMINDERS } from '@/domain/copy';
+import { Icon } from '@/components/icons';
+import { RemindersCard } from '@/components/reminders-card';
 import { heroState, localDate, logsOn, vesselRatio, type AvatarId } from '@/domain/engine';
 import { planStep, type FoodStepKey, type PlanKey } from '@/domain/plan';
 import { appNow } from '@/lib/clock';
+import { SIGN_IN_AGAIN_NOTE } from '@/lib/session';
 import { useGame } from '@/state/game';
 import { font, palette } from '@/theme';
 
@@ -233,37 +234,7 @@ export default function SettingsScreen() {
       {saved ? <Text style={styles.saved}>Saved on this phone.</Text> : null}
 
       <Text style={styles.group}>REMINDERS</Text>
-      <View style={styles.card}>
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Reminders</Text>
-          <Toggle
-            value={Boolean(profile?.remindersEnabled) && Platform.OS !== 'web'}
-            disabled={Platform.OS === 'web'}
-            onValueChange={(enabled) => {
-              void game.setReminders(enabled).then(setError);
-            }}
-          />
-        </View>
-        {REMINDERS.map((reminder) => {
-          const clock = `${reminder.hour % 12 || 12}:${String(reminder.minute).padStart(2, '0')} ${reminder.hour < 12 ? 'AM' : 'PM'}`;
-          const label = reminder.id === 'uyvo-0730' ? 'Soaked dry fruit' : reminder.id === 'uyvo-1100' ? 'Red juice' : 'Green lunch';
-          return (
-            <Pressable
-              key={reminder.id}
-              accessibilityRole="button"
-              onPress={() => {
-                router.push(`/reminder?id=${reminder.id}`);
-              }}
-              style={styles.row}>
-              <Text style={styles.rowLabel}>{label}</Text>
-              <Text style={styles.rowValue}>{clock}</Text>
-              <Icon name="chevron" size={18} />
-            </Pressable>
-          );
-        })}
-        <Text style={styles.hint}>Each reminder opens Today.</Text>
-        {Platform.OS === 'web' ? <Text style={styles.hint}>Reminders work in the app, not in this browser.</Text> : null}
-      </View>
+      <RemindersCard />
 
       {game.snap.mode === 'cloud' ? (
         <>
@@ -273,6 +244,7 @@ export default function SettingsScreen() {
               <Text style={styles.rowLabel}>{game.syncing ? 'Sending…' : 'Send now'}</Text>
               <Icon name="chevron" size={18} />
             </Pressable>
+            {game.snap.lastSyncError === SIGN_IN_AGAIN_NOTE ? <Text style={styles.hint}>{SIGN_IN_AGAIN_NOTE}</Text> : null}
           </View>
         </>
       ) : null}
@@ -287,10 +259,15 @@ export default function SettingsScreen() {
 
       <Text style={styles.group}>ACCOUNT</Text>
       <View style={styles.card}>
+        <Text style={styles.hintTop}>Your progress is saved on this phone, even when the app is closed.</Text>
         <Pressable
           accessibilityRole="button"
           onPress={() => {
-            Alert.alert('Leave Uyvo?', 'You can start again later.', [
+            const leaving =
+              game.snap.mode === 'cloud'
+                ? 'Days you already sent stay in your account. Anything not sent yet is removed from this phone.'
+                : 'This removes your progress from this phone. It cannot be undone.';
+            Alert.alert('Leave Uyvo?', leaving, [
               { text: 'Stay', style: 'cancel' },
               {
                 text: 'Sign out',
@@ -386,6 +363,7 @@ const styles = StyleSheet.create({
   moveButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: palette.sunken, alignItems: 'center', justifyContent: 'center' },
   moveOff: { opacity: 0.35 },
   hint: { color: palette.tertiary, fontFamily: font.text, fontSize: 13, paddingBottom: 12 },
+  hintTop: { color: palette.muted, fontFamily: font.text, fontSize: 13, lineHeight: 18, paddingTop: 14, paddingBottom: 4 },
   signOut: { color: palette.crimson, fontFamily: font.semibold, fontSize: 16 },
   footer: { color: palette.muted, fontFamily: font.italic, fontSize: 15, lineHeight: 22, textAlign: 'center', marginTop: 8 },
 });
