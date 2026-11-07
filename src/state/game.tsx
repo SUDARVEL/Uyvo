@@ -11,12 +11,17 @@ import {
   rescheduleIfAllowed,
   scheduleReminders,
 } from '@/lib/notifications';
+import { getDayOffset, setDayOffset } from '@/lib/clock';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { boot, signIn as signInAccount, signOut as signOutAccount, signUp as signUpAccount, startPractice } from '@/lib/session';
 import {
   drinkTea,
+  endWaitNow,
   logQuest,
   readSnap,
+  reconcile,
+  undoQuest,
+  type UndoableQuest,
   removeLastWater,
   saveAvatar,
   dismissCoach,
@@ -29,10 +34,12 @@ import {
 } from '@/lib/store';
 import {
   readAdminOpen,
+  readDayOffset,
   readFoods,
   readOrder,
   readPlan,
   writeAdminOpen,
+  writeDayOffset,
   writeFood,
   writeOrder,
   writePlan,
@@ -66,6 +73,10 @@ type GameValue = {
   startDigest: () => Promise<string | null>;
   drinkTea: () => Promise<string | null>;
   removeWater: () => Promise<string | null>;
+  undoQuest: (questKey: UndoableQuest) => Promise<string | null>;
+  dayOffset: number;
+  moveDay: (days: number | 'today') => Promise<void>;
+  endWait: () => Promise<string | null>;
   clearNotice: () => void;
   dismissCoach: () => Promise<void>;
   syncNow: () => Promise<void>;
@@ -111,6 +122,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [foods, setFoods] = useState<Record<string, string>>({});
   const [order, setOrder] = useState<FoodStepKey[]>([...FOOD_STEPS]);
   const [adminOpen, setAdminOpenState] = useState(false);
+  const [dayOffset, setDayOffsetState] = useState(0);
   const snapRef = useRef(snap);
   const syncingRef = useRef(false);
   snapRef.current = snap;
@@ -137,6 +149,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let alive = true;
     void (async () => {
+      const savedOffset = await readDayOffset(db);
+      setDayOffset(savedOffset);
       const next = await boot(db);
       const [nextPlan, nextFoods, nextAdmin, nextOrder] = await Promise.all([
         readPlan(db),
@@ -145,6 +159,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         readOrder(db),
       ]);
       if (!alive) return;
+      setDayOffsetState(savedOffset);
       setSnap(next);
       setPlan(nextPlan);
       setFoods(nextFoods);
@@ -239,6 +254,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       },
       signOut: async () => {
         await signOutAccount(db);
+        setDayOffset(0);
+        setDayOffsetState(0);
         setNotice(null);
         await refresh();
       },
@@ -262,6 +279,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
       startDigest: async () => apply(await startDigest(db)),
       drinkTea: async () => apply(await drinkTea(db)),
       removeWater: async () => apply(await removeLastWater(db)),
+      undoQuest: async (questKey) => apply(await undoQuest(db, questKey)),
+      dayOffset,
+      moveDay: async (days) => {
+        const next = days === 'today' ? 0 : getDayOffset() + days;
+        setDayOffset(next);
+        await writeDayOffset(db, next);
+        setDayOffsetState(next);
+        await reconcile(db);
+        await refresh();
+      },
+      endWait: async () => apply(await endWaitNow(db)),
       clearNotice: () => setNotice(null),
       dismissCoach: async () => {
         await dismissCoach(db);
@@ -293,7 +321,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         await runSync();
       },
     }),
-    [adminOpen, apply, db, foods, notice, online, order, plan, ready, refresh, runSync, snap, syncing],
+    [adminOpen, apply, dayOffset, db, foods, notice, online, order, plan, ready, refresh, runSync, snap, syncing],
   );
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

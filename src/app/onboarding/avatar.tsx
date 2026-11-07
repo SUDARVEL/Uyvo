@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Image } from 'expo-image';
 import { Redirect, useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { openingArt } from '@/art';
 import { OnboardingBar } from '@/app/onboarding/name';
+import { PictureCard } from '@/components/picture-card';
 import { Button } from '@/components/ui';
 import type { AvatarId } from '@/domain/engine';
 import { useGame } from '@/state/game';
@@ -46,8 +47,8 @@ export default function AvatarScreen() {
         </Text>
         <Text style={styles.sub}>Both start at Low. Food makes them stronger.</Text>
         <View style={styles.cards}>
-          <Picture label="Woman" art={openingArt.womanLow} selected={avatar === 'woman'} warm onPress={() => setAvatar('woman')} />
-          <Picture label="Man" art={openingArt.manLow} selected={avatar === 'man'} onPress={() => setAvatar('man')} />
+          <PictureCard label="Woman" sub="Starts at Low" art={openingArt.womanLow} selected={avatar === 'woman'} onPress={() => setAvatar('woman')} />
+          <PictureCard label="Man" sub="Starts at Low" art={openingArt.manLow} selected={avatar === 'man'} onPress={() => setAvatar('man')} />
         </View>
         <View style={styles.grows}>
           <View style={styles.growHead}>
@@ -63,7 +64,7 @@ export default function AvatarScreen() {
                   </View>
                   <Text style={[styles.bubbleLabel, item.on ? styles.bubbleLabelOn : null]}>{item.label}</Text>
                 </View>
-                {index < growth.length - 1 ? <Image source={openingArt.chevron} style={styles.chevron} contentFit="contain" /> : null}
+                {index < growth.length - 1 ? <Image source={openingArt.chevronGray} style={styles.chevron} contentFit="contain" /> : null}
               </View>
             ))}
           </View>
@@ -88,35 +89,6 @@ export default function AvatarScreen() {
   );
 }
 
-function Picture({
-  label,
-  art,
-  selected,
-  warm,
-  onPress,
-}: {
-  label: string;
-  art: number;
-  selected: boolean;
-  warm?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.picture}>
-      <View style={[styles.arch, selected ? styles.archOn : styles.archOff, warm && selected ? styles.archWarm : null]}>
-        <Image source={art} style={[styles.portrait, selected ? null : styles.dim]} contentFit="contain" />
-        {selected ? (
-          <View style={styles.check}>
-            <Image source={openingArt.checkWhite} style={{ width: 16, height: 16 }} contentFit="contain" />
-          </View>
-        ) : null}
-      </View>
-      <Text style={styles.pictureLabel}>{label}</Text>
-      <Text style={[styles.pictureSub, selected ? styles.pictureSubOn : null]}>Starts at Low</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   list: { flex: 1 },
@@ -125,39 +97,6 @@ const styles = StyleSheet.create({
   name: { fontFamily: font.displayItalic, color: palette.crimson },
   sub: { color: palette.muted, fontFamily: font.text, fontSize: 15, lineHeight: 22 },
   cards: { flexDirection: 'row', gap: 16, marginTop: 10 },
-  picture: { flex: 1, alignItems: 'center', gap: 2 },
-  arch: {
-    width: '100%',
-    height: 236,
-    borderTopLeftRadius: 82,
-    borderTopRightRadius: 82,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  archOn: { borderWidth: 3, borderColor: palette.crimson },
-  archWarm: { backgroundColor: '#F6D7D4' },
-  archOff: { backgroundColor: palette.sunken, borderWidth: 1.5, borderColor: palette.line },
-  portrait: { width: 200, height: 200 },
-  dim: { opacity: 0.85 },
-  check: {
-    position: 'absolute',
-    top: 13,
-    right: 9,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: palette.crimson,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pictureLabel: { color: palette.ink, fontFamily: font.bold, fontSize: 18, marginTop: 10 },
-  pictureSub: { color: palette.tertiary, fontFamily: font.text, fontSize: 13 },
-  pictureSubOn: { color: palette.crimson },
   grows: {
     marginTop: 6,
     backgroundColor: palette.raised,

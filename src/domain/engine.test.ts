@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 
+import { appNow, getDayOffset, setDayOffset } from '../lib/clock.ts';
+import { normalizeOrder } from './plan.ts';
+
 import {
   buildQuestLog,
   canLog,
@@ -171,5 +174,18 @@ assert.throws(() =>
     loggedAt: '2026-11-06T08:00:00.000Z',
   }),
 );
+
+{
+  const before = Date.now();
+  assert.equal(setDayOffset(0), 0);
+  assert.ok(Math.abs(appNow().getTime() - before) < 2000);
+  setDayOffset(2);
+  assert.equal(getDayOffset(), 2);
+  assert.ok(Math.abs(appNow().getTime() - before - 2 * 86400000) < 2000);
+  setDayOffset(-1);
+  assert.ok(appNow().getTime() < before);
+  assert.equal(setDayOffset(Number.NaN), 0);
+  assert.deepEqual(normalizeOrder(['lunch_greens', 'x', 'lunch_greens']), ['lunch_greens', 'morning_shot', 'midmorning_juice']);
+}
 
 console.log('domain checks passed');

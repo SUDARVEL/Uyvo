@@ -54,6 +54,7 @@ export const openingArt = {
   womanStrong: require('../assets/figma/onboarding/woman-strong.png'),
   manLow: require('../assets/figma/onboarding/man-low.png'),
   chevron: require('../assets/figma/onboarding/chevron.svg'),
+  chevronGray: require('../assets/figma/onboarding/chevron-gray.svg'),
   back: require('../assets/figma/onboarding/back.svg'),
   check: require('../assets/figma/onboarding/check.svg'),
   checkWhite: require('../assets/figma/onboarding/check-white.svg'),

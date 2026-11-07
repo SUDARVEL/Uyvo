@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { addDays, isQuestKey, localDate, type BadgeKey, type QuestLog, type TeaStatus } from '@/domain/engine';
+import { appNow } from '@/lib/clock';
 import { getSupabase } from '@/lib/supabase';
 import {
   deleteOutbox,
@@ -61,7 +62,7 @@ export async function fetchAccount(userId: string, email: string): Promise<Serve
   if (profileResult.error) throw new Error(profileResult.error.message);
   if (!profileResult.data) return null;
 
-  const since = addDays(localDate(), -30);
+  const since = addDays(localDate(appNow()), -30);
   const [wallet, logs, teas, streak, badges, tree] = await Promise.all([
     supabase.from('wallets').select('*').eq('user_id', userId).maybeSingle(),
     supabase.from('quest_logs').select('*').eq('user_id', userId).gte('local_date', since),

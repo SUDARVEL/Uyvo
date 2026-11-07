@@ -25,6 +25,7 @@ import {
   type TreeState,
   type VitaminFood,
 } from '@/domain/engine';
+import { appNow } from '@/lib/clock';
 import { exclusive } from '@/lib/lock';
 import { newId } from '@/lib/id';
 
@@ -630,7 +631,7 @@ export async function reconcile(db: SQLiteDatabase): Promise<void> {
     const userId = await meta(db, 'active_user_id');
     const mode = await meta(db, 'account_mode');
     if (!userId) return;
-    await applyProgress(db, userId, mode, localDate());
+    await applyProgress(db, userId, mode, localDate(appNow()));
   });
 }
 
@@ -718,13 +719,53 @@ export function removeLastWater(db: SQLiteDatabase): Promise<ActionResult> {
   return transaction(db, async () => {
     const userId = await meta(db, 'active_user_id');
     if (!userId) return { error: 'Sign in first.', message: null };
-    const today = localDate(new Date());
+    const today = localDate(appNow());
     const logs = await readLogs(db, userId);
     const last = logs.filter((entry) => entry.localDate === today && entry.questKey === 'water').at(-1);
     if (!last) return { error: null, message: null };
     await db.runAsync('delete from quest_logs where id = ?', last.id);
     await bumpWallet(db, userId, -last.ironShardsAwarded, -last.flowPointsAwarded);
     return { error: null, message: null };
+  });
+}
+
+export const UNDOABLE_QUESTS = ['banana', 'walk'] as const;
+export type UndoableQuest = (typeof UNDOABLE_QUESTS)[number];
+
+export function undoQuest(db: SQLiteDatabase, questKey: UndoableQuest): Promise<ActionResult> {
+  return transaction(db, async () => {
+    const userId = await meta(db, 'active_user_id');
+    if (!userId) return { error: 'Sign in first.', message: null };
+    if (!(UNDOABLE_QUESTS as readonly string[]).includes(questKey)) {
+      return { error: 'This one cannot be undone.', message: null };
+    }
+    const today = localDate(appNow());
+    const logs = await readLogs(db, userId);
+    const last = logs.filter((entry) => entry.localDate === today && entry.questKey === questKey).at(-1);
+    if (!last) return { error: null, message: null };
+    await db.runAsync('delete from quest_logs where id = ?', last.id);
+    await db.runAsync(
+      "delete from outbox where entity = 'quest_log' and client_id = ? and user_id = ?",
+      last.clientId,
+      userId,
+    );
+    await bumpWallet(db, userId, -last.ironShardsAwarded, -last.flowPointsAwarded);
+    return { error: null, message: null };
+  });
+}
+
+export function endWaitNow(db: SQLiteDatabase): Promise<ActionResult> {
+  return transaction(db, async () => {
+    const userId = await meta(db, 'active_user_id');
+    const mode = await meta(db, 'account_mode');
+    if (!userId) return { error: 'Sign in first.', message: null };
+    const teas = await readTeas(db, userId);
+    const active = teas.find((tea) => tea.status === 'active');
+    if (!active) return { error: 'There is no wait to end.', message: null };
+    const ended = new Date(appNow().getTime() - 1000).toISOString();
+    await db.runAsync('update tea_windows set ends_at = ? where id = ?', ended, active.id);
+    const message = await survive(db, { ...active, endsAt: ended }, mode);
+    return { error: null, message };
   });
 }
 
@@ -736,7 +777,7 @@ export function logQuest(
     const userId = await meta(db, 'active_user_id');
     const mode = await meta(db, 'account_mode');
     if (!userId) return { error: 'Sign in first.', message: null };
-    const now = new Date();
+    const now = appNow();
     const today = localDate(now);
     const logs = await readLogs(db, userId);
     const teas = await readTeas(db, userId);
@@ -782,7 +823,7 @@ async function survive(db: SQLiteDatabase, tea: TeaWindow, mode: string | null):
       userId: tea.userId,
       questKey: 'digest_survive',
       today: tea.localDate,
-      loggedAt: new Date().toISOString(),
+      loggedAt: appNow().toISOString(),
     });
     await insertLog(db, entry);
     await bumpWallet(db, tea.userId, entry.ironShardsAwarded, entry.flowPointsAwarded);
@@ -796,7 +837,7 @@ export function startDigest(db: SQLiteDatabase): Promise<ActionResult> {
     const userId = await meta(db, 'active_user_id');
     const mode = await meta(db, 'account_mode');
     if (!userId) return { error: 'Sign in first.', message: null };
-    const now = new Date();
+    const now = appNow();
     const today = localDate(now);
     const logs = await readLogs(db, userId);
     const teas = await readTeas(db, userId);
@@ -846,7 +887,7 @@ export function drinkTea(db: SQLiteDatabase): Promise<ActionResult> {
     const teas = await readTeas(db, userId);
     const active = teas.find((tea) => tea.status === 'active');
     if (!active) return { error: 'There is no digest to spoil.', message: null };
-    const now = new Date();
+    const now = appNow();
     if (now.getTime() >= new Date(active.endsAt).getTime()) {
       const message = await survive(db, active, mode);
       return { error: null, message };
@@ -872,7 +913,7 @@ export function settleTea(db: SQLiteDatabase): Promise<string | null> {
     const mode = await meta(db, 'account_mode');
     if (!userId) return null;
     const teas = await readTeas(db, userId);
-    const now = Date.now();
+    const now = appNow().getTime();
     const due = teas.find((tea) => tea.status === 'active' && new Date(tea.endsAt).getTime() <= now);
     if (!due) return null;
     return survive(db, due, mode);

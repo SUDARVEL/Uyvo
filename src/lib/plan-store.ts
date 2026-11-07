@@ -6,6 +6,7 @@ const PLAN_KEY = 'plan_steps';
 const FOOD_KEY = 'my_foods';
 const ADMIN_KEY = 'admin_open';
 const ORDER_KEY = 'my_order';
+const OFFSET_KEY = 'admin_day_offset';
 
 function isPlanKey(value: string): value is PlanKey {
   return (PLAN_KEYS as readonly string[]).includes(value);
@@ -95,6 +96,15 @@ export async function readAdminOpen(db: SQLiteDatabase): Promise<boolean> {
 
 export async function writeAdminOpen(db: SQLiteDatabase, open: boolean): Promise<void> {
   await writeMeta(db, ADMIN_KEY, open ? '1' : '0');
+}
+
+export async function readDayOffset(db: SQLiteDatabase): Promise<number> {
+  const value = Number.parseInt((await readMeta(db, OFFSET_KEY)) ?? '0', 10);
+  return Number.isFinite(value) ? Math.max(-3650, Math.min(3650, value)) : 0;
+}
+
+export async function writeDayOffset(db: SQLiteDatabase, days: number): Promise<void> {
+  await writeMeta(db, OFFSET_KEY, String(Math.trunc(days)));
 }
 
 async function readMeta(db: SQLiteDatabase, key: string): Promise<string | null> {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, TextInput, View, type ImageSourcePropType } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { foodArt, heroArt, treeArt } from '@/art';
@@ -18,6 +18,7 @@ import {
   type VitaminFood,
 } from '@/domain/engine';
 import { foodLabel, planStep, type FoodStepKey, type PlanKey } from '@/domain/plan';
+import { appNow } from '@/lib/clock';
 import { useGame } from '@/state/game';
 import { font, palette } from '@/theme';
 
@@ -69,67 +70,27 @@ const FOOD_CARD: Record<FoodStepKey, { art: ImageSourcePropType; doubled: string
   },
 };
 
-type NameEdit = { value: string; placeholder: string; onChange: (value: string) => void };
-type Move = { onUp?: () => void; onDown?: () => void };
-
-function MoveButton({ direction, onPress }: { direction: 'up' | 'down'; onPress?: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={direction === 'up' ? 'Move earlier' : 'Move later'}
-      disabled={!onPress}
-      onPress={onPress}
-      hitSlop={6}
-      style={[styles.moveButton, !onPress ? styles.roundOff : null]}>
-      <View style={{ transform: [{ rotate: direction === 'up' ? '-90deg' : '90deg' }] }}>
-        <Icon name="chevron" size={18} />
-      </View>
-    </Pressable>
-  );
-}
-
 function OrderRow({
   title,
   detail,
   art,
   state,
-  edit,
-  move,
 }: {
   title: string;
   detail: string;
   art: ImageSourcePropType;
   state: 'current' | 'locked' | 'done';
-  edit?: NameEdit;
-  move?: Move;
 }) {
   return (
-    <View style={[styles.order, state === 'locked' && !edit ? styles.locked : null]}>
+    <View style={[styles.order, state === 'locked' ? styles.locked : null]}>
       <View style={styles.thumbBox}>
         <Image source={art} resizeMode="contain" style={styles.fill} />
       </View>
       <View style={styles.grow}>
-        {edit ? (
-          <TextInput
-            accessibilityLabel={`Name for ${edit.placeholder}`}
-            value={edit.value}
-            onChangeText={edit.onChange}
-            maxLength={40}
-            placeholder={edit.placeholder}
-            placeholderTextColor={palette.tertiary}
-            style={styles.nameInput}
-          />
-        ) : (
-          <Text style={[styles.orderTitle, state === 'locked' ? styles.faint : null]}>{title}</Text>
-        )}
-        {edit ? null : <Text style={styles.orderDetail}>{detail}</Text>}
+        <Text style={[styles.orderTitle, state === 'locked' ? styles.faint : null]}>{title}</Text>
+        <Text style={styles.orderDetail}>{detail}</Text>
       </View>
-      {move ? (
-        <View style={styles.moveColumn}>
-          <MoveButton direction="up" onPress={move.onUp} />
-          <MoveButton direction="down" onPress={move.onDown} />
-        </View>
-      ) : state === 'done' ? (
+      {state === 'done' ? (
         <View style={styles.doneDot}>
           <Icon name="check" size={14} />
         </View>
@@ -144,10 +105,9 @@ function OrderRow({
 
 export default function ForgeScreen() {
   const game = useGame();
-  const [now, setNow] = useState(() => Date.now());
+  const [, setTick] = useState(0);
+  const now = appNow().getTime();
   const [lemon, setLemon] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [hint, setHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [coachStep, setCoachStep] = useState(0);
@@ -167,7 +127,7 @@ export default function ForgeScreen() {
   const streak = game.snap.streak.currentStreak;
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    const id = setInterval(() => setTick((value) => value + 1), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -202,50 +162,6 @@ export default function ForgeScreen() {
     );
   };
 
-  const startEdit = () => {
-    setDrafts({
-      morning_shot: game.foods.morning_shot ?? '',
-      midmorning_juice: game.foods.midmorning_juice ?? '',
-      lunch_greens: game.foods.lunch_greens ?? '',
-      banana: game.foods.banana ?? '',
-    });
-    setEditing(true);
-  };
-
-  const finishEdit = () => {
-    const changes = Object.entries(drafts).filter(([key, value]) => value.trim() !== (game.foods[key] ?? ''));
-    setEditing(false);
-    void (async () => {
-      for (const [key, value] of changes) {
-        await game.saveFood(key as PlanKey, value);
-      }
-    })();
-  };
-
-  const nameEdit = (key: PlanKey): NameEdit => ({
-    value: drafts[key] ?? '',
-    placeholder: step(key).title,
-    onChange: (value) => setDrafts((prev) => ({ ...prev, [key]: value })),
-  });
-
-  const move = (index: number, to: number) => {
-    const next = [...order];
-    const [item] = next.splice(index, 1);
-    next.splice(to, 0, item);
-    void game.saveOrder(next);
-  };
-
-  const moveFor = (index: number): Move => {
-    const key = order[index];
-    const before = order[index - 1];
-    const after = order[index + 1];
-    const free = !done.has(key);
-    return {
-      onUp: free && before && !done.has(before) ? () => move(index, index - 1) : undefined,
-      onDown: free && after && !done.has(after) ? () => move(index, index + 1) : undefined,
-    };
-  };
-
   return (
     <Screen
       overlay={
@@ -260,7 +176,14 @@ export default function ForgeScreen() {
           />
         ) : null
       }>
-      <Text style={styles.date}>{dateLabel(now)}</Text>
+      <View style={styles.dateRow}>
+        <Text style={styles.date}>{dateLabel(now)}</Text>
+        {game.dayOffset !== 0 ? (
+          <View style={styles.testChip}>
+            <Text style={styles.testChipText}>Test day</Text>
+          </View>
+        ) : null}
+      </View>
       <View style={styles.helloRow}>
         <Text style={styles.hello}>Hi, {name}</Text>
         <View style={styles.streakChip}>
@@ -359,27 +282,14 @@ export default function ForgeScreen() {
           <Text style={styles.section}>Today’s order</Text>
           <Text style={styles.sectionMeta}>{doneCount} of 5 done</Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          onPress={editing ? finishEdit : startEdit}
-          style={[styles.editPill, editing ? styles.editPillOn : null]}>
-          <Text style={[styles.editPillText, editing ? styles.editPillTextOn : null]}>{editing ? 'Done' : 'Edit'}</Text>
-        </Pressable>
       </View>
-      {editing ? (
-        <Text style={styles.editHint}>
-          Type your own name for a food. Use the arrows to change the order. The picture stays the same.
-        </Text>
-      ) : null}
-      {order.map((key, index) => (
+      {order.map((key) => (
         <OrderRow
           key={key}
           title={named(key)}
           detail={step(key).detail}
           art={FOOD_CARD[key].art}
           state={done.has(key) ? 'done' : key === firstOpen ? 'current' : 'locked'}
-          edit={editing ? nameEdit(key) : undefined}
-          move={editing ? moveFor(index) : undefined}
         />
       ))}
       <OrderRow
@@ -425,64 +335,74 @@ export default function ForgeScreen() {
           <Icon name="plus" size={16} />
         </Pressable>
       </View>
-      <View style={styles.order}>
-        <View style={styles.thumbBox}>
-          <Image source={foodArt.banana} resizeMode="contain" style={styles.fill} />
-        </View>
-        <View style={styles.grow}>
-          {editing ? (
-            <TextInput
-              accessibilityLabel="Name for banana"
-              value={drafts.banana ?? ''}
-              onChangeText={(value) => setDrafts((prev) => ({ ...prev, banana: value }))}
-              maxLength={40}
-              placeholder={step('banana').title}
-              placeholderTextColor={palette.tertiary}
-              style={styles.nameInput}
-            />
-          ) : (
-            <>
-              <Text style={styles.orderTitle}>{named('banana')}</Text>
-              <Text style={styles.orderDetail}>{step('banana').detail}</Text>
-            </>
-          )}
-        </View>
-        {done.has('banana') ? (
-          <View style={styles.doneDot}>
-            <Icon name="check" size={14} />
-          </View>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="I ate the banana"
-            disabled={busy}
-            onPress={() => run(() => game.logQuest({ questKey: 'banana' }))}
-            hitSlop={12}
-            style={styles.openDot}
-          />
-        )}
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        disabled={busy || done.has('walk')}
-        onPress={() => run(() => game.logQuest({ questKey: 'walk' }))}
-        style={styles.order}>
-        <View style={styles.thumbBox}>
-          <Image source={foodArt.walk} resizeMode="contain" style={styles.fill} />
-        </View>
-        <View style={styles.grow}>
-          <Text style={styles.orderTitle}>{step('walk').title}</Text>
-          <Text style={styles.orderDetail}>{step('walk').detail}</Text>
-        </View>
-        {done.has('walk') ? (
-          <View style={styles.doneDot}>
-            <Icon name="check" size={14} />
-          </View>
-        ) : (
-          <View style={styles.openDot} />
-        )}
-      </Pressable>
+      <TickRow
+        title={named('banana')}
+        detail={step('banana').detail}
+        art={foodArt.banana}
+        done={done.has('banana')}
+        busy={busy}
+        openLabel="I ate the banana"
+        undoLabel="Undo banana"
+        onToggle={() =>
+          run(() => (done.has('banana') ? game.undoQuest('banana') : game.logQuest({ questKey: 'banana' })))
+        }
+      />
+      <TickRow
+        title={step('walk').title}
+        detail={step('walk').detail}
+        art={foodArt.walk}
+        done={done.has('walk')}
+        busy={busy}
+        openLabel="I did the walk"
+        undoLabel="Undo walk"
+        onToggle={() => run(() => (done.has('walk') ? game.undoQuest('walk') : game.logQuest({ questKey: 'walk' })))}
+      />
     </Screen>
+  );
+}
+
+function TickRow({
+  title,
+  detail,
+  art,
+  done,
+  busy,
+  openLabel,
+  undoLabel,
+  onToggle,
+}: {
+  title: string;
+  detail: string;
+  art: ImageSourcePropType;
+  done: boolean;
+  busy: boolean;
+  openLabel: string;
+  undoLabel: string;
+  onToggle: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={done ? undoLabel : openLabel}
+      accessibilityState={{ checked: done }}
+      disabled={busy}
+      onPress={onToggle}
+      style={styles.order}>
+      <View style={styles.thumbBox}>
+        <Image source={art} resizeMode="contain" style={styles.fill} />
+      </View>
+      <View style={styles.grow}>
+        <Text style={styles.orderTitle}>{title}</Text>
+        <Text style={styles.orderDetail}>{detail}</Text>
+      </View>
+      {done ? (
+        <View style={styles.doneDot}>
+          <Icon name="check" size={14} />
+        </View>
+      ) : (
+        <View style={styles.openDot} />
+      )}
+    </Pressable>
   );
 }
 
@@ -616,6 +536,9 @@ const chipTone = {
 } as const;
 
 const styles = StyleSheet.create({
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  testChip: { backgroundColor: palette.amberSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  testChipText: { color: palette.orange, fontFamily: font.bold, fontSize: 11 },
   date: { color: palette.tertiary, fontFamily: font.bold, fontSize: 12, letterSpacing: 1.4 },
   helloRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   hello: { color: palette.ink, fontFamily: font.display, fontSize: 32, flexShrink: 1 },
@@ -752,31 +675,7 @@ const styles = StyleSheet.create({
   },
   grow: { flex: 1 },
   orderTitle: { color: palette.ink, fontFamily: font.semibold, fontSize: 16 },
-  nameInput: {
-    height: 44,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: palette.crimson,
-    backgroundColor: palette.raised,
-    paddingHorizontal: 12,
-    color: palette.ink,
-    fontFamily: font.semibold,
-    fontSize: 15,
-  },
   moveColumn: { gap: 6 },
-  moveButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: palette.sunken,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editPill: { backgroundColor: palette.blush, borderRadius: 999, paddingHorizontal: 16, height: 36, alignItems: 'center', justifyContent: 'center' },
-  editPillOn: { backgroundColor: palette.crimson },
-  editPillText: { color: palette.crimson, fontFamily: font.bold, fontSize: 14 },
-  editPillTextOn: { color: '#fff' },
-  editHint: { color: palette.muted, fontFamily: font.text, fontSize: 13, lineHeight: 18 },
   faint: { color: palette.tertiary },
   orderDetail: { color: palette.muted, fontFamily: font.text, fontSize: 13, marginTop: 2 },
   doneDot: {

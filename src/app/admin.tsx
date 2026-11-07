@@ -5,10 +5,30 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Button, Field, Screen } from '@/components/ui';
 import { adminMatches } from '@/lib/admin-gate';
+import { appNow } from '@/lib/clock';
 import type { PlanKey, PlanStep } from '@/domain/plan';
 import { useGame } from '@/state/game';
 import { PullRefresh } from '@/state/refresh';
 import { font, palette } from '@/theme';
+
+function testDateLabel(offset: number): string {
+  const text = appNow().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '');
+  if (offset === 0) return `${text} · real date`;
+  const days = Math.abs(offset);
+  return `${text} · ${days} ${days === 1 ? 'day' : 'days'} ${offset > 0 ? 'ahead' : 'back'}`;
+}
+
+function ToolButton({ label, onPress, disabled }: { label: string; onPress: () => void; disabled?: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled}
+      onPress={onPress}
+      style={[styles.tool, disabled ? styles.toolOff : null]}>
+      <Text style={styles.toolText}>{label}</Text>
+    </Pressable>
+  );
+}
 
 export default function AdminScreen() {
   const game = useGame();
@@ -19,6 +39,7 @@ export default function AdminScreen() {
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<PlanStep[]>(game.plan);
   const [notice, setNotice] = useState<string | null>(null);
+  const [toolNote, setToolNote] = useState<string | null>(null);
 
   useEffect(() => {
     setDraft(game.plan);
@@ -75,8 +96,45 @@ export default function AdminScreen() {
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}>
         <Text style={styles.backText}>Back</Text>
       </Pressable>
+      <Text style={styles.title}>Admin</Text>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Test tools</Text>
+        <Text style={styles.lead}>Skip days to test everything. Normal users never see this.</Text>
+        <View style={styles.dateBox}>
+          <Text style={styles.dateLabel}>Test date in use</Text>
+          <Text style={styles.dateValue}>{testDateLabel(game.dayOffset)}</Text>
+        </View>
+        <View style={styles.tools}>
+          <ToolButton
+            label="Next day"
+            onPress={() => {
+              void game.moveDay(1).then(() => setToolNote('Moved one day on.'));
+            }}
+          />
+          <ToolButton
+            label="Back a day"
+            onPress={() => {
+              void game.moveDay(-1).then(() => setToolNote('Moved one day back.'));
+            }}
+          />
+          <ToolButton
+            label="Back to today"
+            disabled={game.dayOffset === 0}
+            onPress={() => {
+              void game.moveDay('today').then(() => setToolNote('Back to the real date.'));
+            }}
+          />
+          <ToolButton
+            label="End the wait now"
+            onPress={() => {
+              void game.endWait().then((error) => setToolNote(error ?? 'The wait is finished.'));
+            }}
+          />
+        </View>
+        {toolNote ? <Text style={styles.saved}>{toolNote}</Text> : null}
+      </View>
       <Text style={styles.title}>Edit the day</Text>
-      <Text style={styles.lead}>Change a name or the words. The iron and flow numbers stay the same. People still name their own food on Today.</Text>
+      <Text style={styles.lead}>Change a name or the words. The iron and flow numbers stay the same. People rename their own foods in Settings.</Text>
       {draft.map((step) => (
         <View key={step.key} style={styles.card}>
           <Field label="Name" value={step.title} onChangeText={(value) => update(step.key, 'title', value)} autoCapitalize="words" />
@@ -138,6 +196,22 @@ const styles = StyleSheet.create({
   title: { color: palette.ink, fontFamily: font.display, fontSize: 36, letterSpacing: -0.6 },
   lead: { color: palette.muted, fontFamily: font.text, fontSize: 15, lineHeight: 22 },
   error: { color: palette.crimson, fontFamily: font.semibold, fontSize: 13 },
+  cardTitle: { color: palette.ink, fontFamily: font.bold, fontSize: 18 },
+  dateBox: { backgroundColor: palette.amberSoft, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, gap: 2 },
+  dateLabel: { color: palette.orange, fontFamily: font.semibold, fontSize: 12 },
+  dateValue: { color: palette.ink, fontFamily: font.bold, fontSize: 15 },
+  tools: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tool: {
+    flexGrow: 1,
+    flexBasis: '45%',
+    height: 48,
+    borderRadius: 999,
+    backgroundColor: palette.crimson,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolOff: { opacity: 0.4 },
+  toolText: { color: '#FFFFFF', fontFamily: font.bold, fontSize: 15 },
   saved: { color: palette.leaf, fontFamily: font.semibold, fontSize: 14 },
   card: { backgroundColor: palette.raised, borderRadius: 24, padding: 16, gap: 12 },
   field: { gap: 6 },

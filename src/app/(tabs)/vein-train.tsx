@@ -4,6 +4,7 @@ import { treeArt } from '@/art';
 import { Icon } from '@/components/icons';
 import { Screen } from '@/components/ui';
 import { BADGE_AT, BADGE_LABEL, BADGE_ORDER, localDate } from '@/domain/engine';
+import { appNow } from '@/lib/clock';
 import { useGame } from '@/state/game';
 import { font, palette } from '@/theme';
 
@@ -20,10 +21,11 @@ function mondayOf(date: Date): Date {
 
 export default function VeinTrainScreen() {
   const { snap } = useGame();
+  const now = appNow();
   const earned = new Set(snap.badges.map((badge) => badge.badgeKey));
   const streak = snap.streak.currentStreak;
-  const today = localDate(new Date());
-  const monday = mondayOf(new Date());
+  const today = localDate(now);
+  const monday = mondayOf(now);
   const success = new Set<string>();
   if (snap.streak.lastSuccessDate && streak > 0) {
     const end = new Date(`${snap.streak.lastSuccessDate}T12:00:00`);
