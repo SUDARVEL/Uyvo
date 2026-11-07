@@ -2,6 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import {
   AVATARS,
+  addDays,
   buildQuestLog,
   canLog,
   canStartDigest,
@@ -67,6 +68,7 @@ export type OutboxItem = {
 };
 
 export type ServerSnapshot = {
+  since?: string;
   profile: Profile;
   wallet: { ironShards: number; flowPoints: number };
   logs: QuestLog[];
@@ -568,8 +570,10 @@ export async function replaceFromServer(db: SQLiteDatabase, snapshot: ServerSnap
     const pending = await db.getFirstAsync<{ n: number }>('select count(*) as n from outbox');
     if ((pending?.n ?? 0) > 0) return false;
     const userId = snapshot.profile.id;
-    await db.runAsync('delete from quest_logs where user_id = ?', userId);
-    await db.runAsync('delete from tea_windows where user_id = ?', userId);
+    // The server only sends the last 30 days, so older rows on the phone are kept.
+    const since = snapshot.since ?? addDays(localDate(appNow()), -30);
+    await db.runAsync('delete from quest_logs where user_id = ? and local_date >= ?', userId, since);
+    await db.runAsync('delete from tea_windows where user_id = ? and local_date >= ?', userId, since);
     await db.runAsync('delete from badges where user_id = ?', userId);
     await writeProfile(db, snapshot.profile, null);
     await db.runAsync(
