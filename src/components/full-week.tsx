@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     gap: 12,
     zIndex: 20,
   },
-  fruit: { width: 180, height: 180, borderRadius: 28 },
+  fruit: { width: 180, height: 180 },
   kicker: { color: palette.crimson, fontFamily: font.bold, fontSize: 12, letterSpacing: 1.4 },
   title: { color: palette.ink, fontFamily: font.display, fontSize: 36, textAlign: 'center' },
   body: { color: palette.muted, fontFamily: font.text, fontSize: 16, textAlign: 'center', lineHeight: 22 },

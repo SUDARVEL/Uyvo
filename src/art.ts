@@ -25,12 +25,12 @@ export const foodArt = {
   water: require('../assets/figma/water.jpg'),
   banana: require('../assets/figma/banana.jpg'),
   walk: require('../assets/figma/walk.jpg'),
-  tea: require('../assets/figma/tea.jpg'),
+  tea: require('../assets/figma/cards/tea.png'),
 } as const;
 
 export const treeArt = {
-  sapling: require('../assets/figma/small-plant.jpg'),
-  fruit: require('../assets/figma/red-fruit.jpg'),
+  sapling: require('../assets/figma/cards/small-plant.png'),
+  fruit: require('../assets/figma/cards/red-fruit.png'),
 } as const;
 
 export const markArt = require('../assets/figma/logo.png') as ImageSourcePropType;
